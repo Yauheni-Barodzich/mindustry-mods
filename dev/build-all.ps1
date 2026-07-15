@@ -11,7 +11,7 @@ $serverMods = Join-Path $repo "server-mods"
 $scs = Join-Path $root "server-content-sync"
 
 $artifactNames = @(
-    "dune-start.jar", "dune-start.zip",
+    "dune-start.zip",
     "CONTENT-dune-start.zip",
     "sync-admin.zip",
     "CONTENT-sync-admin.zip",
@@ -48,7 +48,7 @@ foreach ($name in $artifactNames) {
 }
 
 Write-Host "==> dune-start"
-& (Join-Path $root "pack-content-mod.ps1") -ModDir (Join-Path $root "dune-start") -Out (Join-Path $dist "CONTENT-dune-start.zip")
+& (Join-Path $root "pack-content-mod.ps1") -ModDir (Join-Path $root "dune-start") -Out (Join-Path $dist "dune-start.zip")
 
 Write-Host "==> Синхронизация и админка (gradle)"
 Push-Location $scs
@@ -73,10 +73,10 @@ function Publish-Artifact($srcPath, $dstName, $targets) {
     }
 }
 
-$contentSrc = Join-Path $dist "CONTENT-dune-start.zip"
+$contentSrc = Join-Path $dist "dune-start.zip"
 $scsSrc = Join-Path $scs "unified\build\libs\sync-admin.zip"
 
 Publish-Artifact $scsSrc "sync-admin.zip" @($dist, $clientMods, $serverMods)
-Publish-Artifact $contentSrc "CONTENT-dune-start.zip" @($dist, $clientMods, $serverMods)
+Publish-Artifact $contentSrc "dune-start.zip" @($dist, $clientMods, $serverMods)
 
 Write-Host "Done. Build: dist\ | Client: mods\ | Server deploy: server-mods\ | Publish: GitHub Releases"

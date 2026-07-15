@@ -8,14 +8,13 @@
 
 | Архив | Куда |
 |-------|------|
-| `CLIENT-*.zip`, `CONTENT-*.zip`, `sync-admin.zip` | `%AppData%/Mindustry/mods/` |
-| `SERVER-*.zip`, `CONTENT-*.zip`, `sync-admin.zip` | `config/mods/` на сервере |
+| `*.zip` (моды) | `%AppData%/Mindustry/mods/` и `config/mods/` на сервере |
 
-`sync-admin.zip` — **один пакет** для сервера и клиента (синхронизация + админка).
+Оба пакета ставятся одинаково на клиент и сервер.
 
 ## Моды
 
-### CONTENT-dune-start — Дюна: Старт
+### dune-start — Дюна: Старт
 
 Игровой контент в духе Дюны: ранняя добыча и техника.
 
@@ -43,7 +42,7 @@
 
 ```
 sync-admin.zip
-CONTENT-dune-start.zip
+dune-start.zip
 ```
 
 ## Карты
@@ -52,10 +51,12 @@ CONTENT-dune-start.zip
 
 ## Сборка
 
-```powershell
+```bat
 cd dev
-.\build-all.ps1    # → dist\sync-admin.zip, dist\CONTENT-dune-start.zip
-.\release.ps1      # тег + GitHub Release
+build-all.bat       :: → dist\sync-admin.zip, dist\dune-start.zip
+release.bat         :: патч-релиз (+ тег GitHub)
 ```
+
+Аргументы те же, что у `.ps1` (например `release.bat -Increment minor`).
 
 Версия в `VERSION`. Zip публикуются в [Releases](https://github.com/Yauheni-Barodzich/mindustry-mods/releases), в git не хранятся.

@@ -38,7 +38,7 @@ jobs:
         run: |
           $required = @(
             "dist/sync-admin.zip",
-            "dist/CONTENT-dune-start.zip"
+            "dist/dune-start.zip"
           )
           foreach ($f in $required) {
             if (-not (Test-Path $f)) { throw "Missing artifact: $f" }
