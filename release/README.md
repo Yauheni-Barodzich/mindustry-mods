@@ -31,6 +31,17 @@ push в main (dev/**)
 | Стабильная версия | [Releases](https://github.com/Yauheni-Barodzich/mindustry-mods/releases) |
 | Локально | `dev\build-all.ps1` → `release/` (в .gitignore) |
 
+## Версии
+
+Единый источник: файл **`VERSION`** в корне репозитория.
+
+| Когда | Что происходит |
+|-------|----------------|
+| push в `main` | версии **не** меняются |
+| Release (тег / Run workflow) | `bump-version.ps1` обновляет `VERSION`, все `mod.hjson`, `gradle` → коммит → сборка |
+
+Бамп **только при релизе**, не автоматически на каждый push.
+
 ## Опубликовать версию
 
 **GitHub UI:** Actions → Release → Run workflow → `0.1.0`

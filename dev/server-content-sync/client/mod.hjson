@@ -3,6 +3,6 @@ displayName: "Синхронизация контента"
 author: "borodich"
 description: "Скачивает нужные моды и карты с сервера, где установлен плагин Server Content Sync."
 version: "1.0.0"
-minGameVersion: "159"
+minGameversion: "1.0.0"
 main: "scs.client.ServerContentSyncClient"
 hidden: true
