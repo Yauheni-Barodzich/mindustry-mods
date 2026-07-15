@@ -5,7 +5,7 @@ dependencies {
 }
 
 jar {
-    archiveFileName = 'server-content-sync-client.jar'
+    archiveFileName = 'CLIENT-sync-content.zip'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }

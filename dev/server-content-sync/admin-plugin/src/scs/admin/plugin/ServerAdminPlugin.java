@@ -12,6 +12,10 @@ public class ServerAdminPlugin extends Plugin {
 
     @Override
     public void init() {
+        if (!mindustry.Vars.headless) {
+            Log.info("[Admin] Server plugin skipped on client.");
+            return;
+        }
         config = AdminConfig.load();
         auth = new AdminAuth(config);
         spawnClamp = new SpawnClamp(config);

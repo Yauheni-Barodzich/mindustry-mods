@@ -11,6 +11,10 @@ public class ServerContentSyncPlugin extends Plugin {
 
     @Override
     public void init() {
+        if (!mindustry.Vars.headless) {
+            Log.info("[SCS] Server plugin skipped on client.");
+            return;
+        }
         config = SyncConfig.load();
         index = new ContentIndex();
         index.rebuild();
