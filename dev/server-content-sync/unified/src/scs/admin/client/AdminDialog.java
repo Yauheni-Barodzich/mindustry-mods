@@ -14,6 +14,9 @@ import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 import scs.*;
 
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+
 /** Remote server management dialog. Password is not saved to disk. */
 public class AdminDialog extends BaseDialog {
     private static final float BTN_H = 48f;
@@ -43,6 +46,7 @@ public class AdminDialog extends BaseDialog {
     private ObjectMap<String, String> rulesValues = new ObjectMap<>();
 
     private AdminApiClient api;
+    private String cachedLoginPassword;
 
     public AdminDialog() {
         super(Loc.get("scs.admin.title", "Server Admin"));
@@ -335,6 +339,7 @@ public class AdminDialog extends BaseDialog {
         status.setText(Loc.format("scs.admin.loggingIn", "Logging in via {0}...", source));
         final String passFinal = pass;
         final String sourceFinal = source;
+        cachedLoginPassword = passFinal;
         Threads.daemon(() -> {
             try {
                 api.login(passFinal);
@@ -773,28 +778,81 @@ public class AdminDialog extends BaseDialog {
                 String s = api.status();
                 Core.app.post(() -> statusArea.setText(prettyJson(s)));
             } catch (Throwable t) {
-                Core.app.post(() -> status.setText("[scarlet]" + t.getMessage()));
+                Core.app.post(() -> status.setText(formatNetworkError(t)));
             }
         });
+    }
+
+    private String currentAdminUrl() {
+        String url = urlField.getText().trim();
+        if (url.isEmpty()) url = AdminApiClient.defaultUrlFromAddress(addressField.getText());
+        return url;
+    }
+
+    private static String formatNetworkError(Throwable t) {
+        if (t instanceof ConnectException || t instanceof SocketTimeoutException
+                || (t.getMessage() != null && t.getMessage().toLowerCase().contains("connect"))) {
+            return Loc.get("scs.admin.networkError",
+                    "[scarlet]Cannot reach admin API. After restart wait ~20 sec, then Login again. Check admin URL (game port + 2).");
+        }
+        return Loc.format("scs.admin.loginFail", "[scarlet]Login failed: {0}", t.getMessage());
     }
 
     private void restartServer() {
         if (api == null || !api.isLoggedIn()) return;
         Vars.ui.showCustomConfirm(
                 Loc.get("scs.admin.restartTitle", "Restart server"),
-                Loc.get("scs.admin.restartBody", "Server will stop and should restart via systemd/supervisor. Continue?"),
+                Loc.get("scs.admin.restartBody", "Server will stop for ~15–25 sec (game and admin offline). systemd should bring it back. Continue?"),
                 Loc.get("scs.admin.restart", "Restart server"),
                 Loc.get("scs.admin.cancel", "Cancel"),
                 () -> Threads.daemon(() -> {
                     try {
+                        String url = api.getBaseUrl();
                         api.restart();
-                        Core.app.post(() -> status.setText(Loc.get("scs.admin.restartOk", "[accent]Restart command sent.")));
+                        api.logout();
+                        Core.app.post(() -> status.setText(Loc.get("scs.admin.restartOk",
+                                "[accent]Restart sent. Waiting for server (~20 sec)...")));
+                        waitForServerAfterRestart(url);
                     } catch (Throwable t) {
-                        Core.app.post(() -> status.setText("[scarlet]" + t.getMessage()));
+                        Core.app.post(() -> status.setText(formatNetworkError(t)));
                     }
                 }),
                 () -> {}
         );
+    }
+
+    private void waitForServerAfterRestart(String url) {
+        for (int attempt = 1; attempt <= 24; attempt++) {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException ignored) {
+                return;
+            }
+            if (!AdminApiClient.isReachable(url)) continue;
+            String pass = cachedLoginPassword;
+            if (pass == null || pass.isEmpty()) pass = LocalAdminPassword.read();
+            if (pass == null || pass.isEmpty()) {
+                Core.app.post(() -> status.setText(Loc.get("scs.admin.restartUp",
+                        "[accent]Server is back. Log in again (session was reset).")));
+                return;
+            }
+            try {
+                final String loginPass = pass;
+                AdminApiClient fresh = new AdminApiClient(url);
+                fresh.login(loginPass);
+                Core.app.post(() -> {
+                    api = fresh;
+                    cachedLoginPassword = loginPass;
+                    status.setText(Loc.get("scs.admin.restartBack",
+                            "[accent]Server is back online — logged in again."));
+                    refreshAll();
+                });
+                return;
+            } catch (Throwable ignored) {
+            }
+        }
+        Core.app.post(() -> status.setText(Loc.get("scs.admin.restartTimeout",
+                "[scarlet]Server did not respond in time. Wait a bit and use Login.")));
     }
 
     private void sendBroadcast() {

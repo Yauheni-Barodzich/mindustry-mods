@@ -24,6 +24,34 @@ public class AdminApiClient {
         token = null;
     }
 
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    /** True when admin HTTP accepts connections (any HTTP response, not a connect failure). */
+    public static boolean isReachable(String baseUrl) {
+        if (baseUrl == null || baseUrl.isBlank()) return false;
+        String url = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) new URL(url + AdminConstants.API_PREFIX + "/login").openConnection();
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(4000);
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+            try (OutputStream out = conn.getOutputStream()) {
+                out.write("{}".getBytes(StandardCharsets.UTF_8));
+            }
+            conn.getResponseCode();
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+    }
+
     public void login(String password) throws IOException {
         String body = "{\"password\":\"" + escapeJson(password) + "\"}";
         String resp = request("POST", AdminConstants.API_PREFIX + "/login", body, null, "application/json");
