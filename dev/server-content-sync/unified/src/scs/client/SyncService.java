@@ -108,7 +108,7 @@ public class SyncService {
         for (ManifestEntry e : remote.mods) remoteModFiles.add(e.fileName);
         for (String localName : localModHashes.keys()) {
             if (!remoteModFiles.contains(localName)
-                    && !localName.toLowerCase().contains("server-content-sync")) {
+                    && !ScsConstants.isProtectedModFile(localName)) {
                 result.extraModFiles.add(localName);
             }
         }

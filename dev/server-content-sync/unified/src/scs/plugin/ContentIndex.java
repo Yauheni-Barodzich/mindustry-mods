@@ -107,10 +107,7 @@ public class ContentIndex {
     }
 
     private boolean shouldSkipMod(ModMeta meta, Fi file) {
-        String name = meta.name == null ? "" : meta.name.toLowerCase();
-        if (name.equals(SyncConstants.PLUGIN_MOD_NAME) || name.equals(SyncConstants.CLIENT_MOD_NAME)) {
-            return true;
-        }
+        if (ScsConstants.isInfraModName(meta.name)) return true;
         if (meta.hidden) return true;
         // plugin.json / Plugin subclasses are server-only
         if (hasPluginMeta(file)) return true;

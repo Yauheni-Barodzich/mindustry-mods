@@ -37,12 +37,8 @@ jobs:
         shell: pwsh
         run: |
           $required = @(
-            "release/client/CLIENT-admin.zip",
-            "release/client/CLIENT-sync-content.zip",
-            "release/client/CONTENT-dune-start.zip",
-            "release/server/SERVER-admin.zip",
-            "release/server/SERVER-sync-content.zip",
-            "release/server/CONTENT-dune-start.zip"
+            "dist/sync-admin.zip",
+            "dist/CONTENT-dune-start.zip"
           )
           foreach ($f in $required) {
             if (-not (Test-Path $f)) { throw "Missing artifact: $f" }
@@ -54,6 +50,4 @@ jobs:
         with:
           name: mindustry-mods-${{ github.sha }}
           retention-days: 14
-          path: |
-            release/client/*.zip
-            release/server/*.zip
+          path: dist/*.zip

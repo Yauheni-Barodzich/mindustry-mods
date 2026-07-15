@@ -5,13 +5,15 @@ dependencies {
 }
 
 jar {
-    archiveFileName = 'CLIENT-admin.zip'
+    archiveFileName = 'sync-admin.zip'
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
     from(projectDir) {
+        include 'plugin.hjson'
         include 'mod.hjson'
         include 'bundles/**'
+        include 'assets/**'
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

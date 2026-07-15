@@ -8,10 +8,10 @@
 
 | Архив | Куда |
 |-------|------|
-| `CLIENT-*.zip`, `CONTENT-*.zip` | `%AppData%/Mindustry/mods/` |
-| `SERVER-*.zip`, `CONTENT-*.zip` | `config/mods/` на сервере |
+| `CLIENT-*.zip`, `CONTENT-*.zip`, `sync-admin.zip` | `%AppData%/Mindustry/mods/` |
+| `SERVER-*.zip`, `CONTENT-*.zip`, `sync-admin.zip` | `config/mods/` на сервере |
 
-`SERVER-*` — **только сервер**. На клиент не ставить.
+`sync-admin.zip` — **один пакет** для сервера и клиента (синхронизация + админка).
 
 ## Моды
 
@@ -24,38 +24,38 @@
 
 Клиент и сервер должны иметь одинаковую версию.
 
-### SERVER-sync-content + CLIENT-sync-content — Синхронизация
+### sync-admin — Синхронизация и админка
 
-Сервер раздаёт моды и карты по HTTP; клиент скачивает недостающее перед заходом.
+Единый пакет: синхронизация модов/карт и удалённое управление сервером.
 
-**Сервер:** `SERVER-sync-content.zip`, firewall порт `gamePort + 1` (6567 → 6568).
+**Синхронизация:** сервер раздаёт моды и карты по HTTP (`gamePort + 1`, 6567 → 6568).  
+Клиент: Multiplayer → **Content Sync** → адрес `host:6567` → Fetch → Download.
 
-**Клиент:** `CLIENT-sync-content.zip` → Multiplayer → **Content Sync** → адрес `host:6567` → Fetch → Download.
+**Админка:** статус, рестарт, моды, карты, правила (`gamePort + 2`, 6567 → 6569).  
+Пароль: `config/mods/server-admin/admin.password` (только FTP/SSH).  
+Клиент: **Server Admin** → адрес сервера → пароль.
 
-### SERVER-admin + CLIENT-admin — Админка
-
-Удалённое управление сервером: статус, рестарт, моды, карты, правила.
-
-**Сервер:** `SERVER-admin.zip`, пароль в `config/mods/server-admin/admin.password` (только FTP/SSH), firewall `gamePort + 2` (6567 → 6569).
-
-**Клиент:** `CLIENT-admin.zip` → **Server Admin** → адрес сервера → пароль.
+Конфиги sync и admin по-прежнему в `config/mods/server-content-sync/` и `config/mods/server-admin/`.
 
 ## Минимальный набор
 
-**Сервер** `config/mods/`:
-```
-SERVER-sync-content.zip
-SERVER-admin.zip
-CONTENT-dune-start.zip
-```
+**Сервер** `config/mods/` и **клиент** `mods/` — одинаково:
 
-**Клиент** `mods/`:
 ```
-CLIENT-sync-content.zip
-CLIENT-admin.zip
+sync-admin.zip
 CONTENT-dune-start.zip
 ```
 
 ## Карты
 
 `DUNE.msav` — кладётся на сервер в `config/maps/`, клиент подтянет через sync.
+
+## Сборка
+
+```powershell
+cd dev
+.\build-all.ps1    # → dist\sync-admin.zip, dist\CONTENT-dune-start.zip
+.\release.ps1      # тег + GitHub Release
+```
+
+Версия в `VERSION`. Zip публикуются в [Releases](https://github.com/Yauheni-Barodzich/mindustry-mods/releases), в git не хранятся.

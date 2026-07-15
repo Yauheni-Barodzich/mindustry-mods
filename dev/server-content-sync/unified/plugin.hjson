@@ -1,0 +1,7 @@
+name: "server-sync-admin"
+displayName: "Синхронизация и админка (сервер)"
+author: "borodich"
+description: "Синхронизация модов/карт с сервера и удалённая админка: HTTP API."
+version: "1.0.0"
+minGameVersion: "159"
+main: "scs.ScsPlugin"

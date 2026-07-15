@@ -1,7 +1,0 @@
-name: "server-admin"
-displayName: "Админ сервера (плагин)"
-author: "borodich"
-description: "HTTP API управления сервером. Пароль только в admin.password на диске (FTP/SSH)."
-version: "1.0.0"
-minGameVersion: "159"
-main: "scs.admin.plugin.ServerAdminPlugin"

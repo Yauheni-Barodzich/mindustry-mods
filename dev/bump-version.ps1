@@ -40,10 +40,8 @@ Write-Host "VERSION -> $version"
 
 $metaFiles = @(
     "dev/dune-start/mod.hjson",
-    "dev/server-content-sync/client/mod.hjson",
-    "dev/server-content-sync/admin-client/mod.hjson",
-    "dev/server-content-sync/plugin/plugin.hjson",
-    "dev/server-content-sync/admin-plugin/plugin.hjson"
+    "dev/server-content-sync/unified/mod.hjson",
+    "dev/server-content-sync/unified/plugin.hjson"
 )
 
 foreach ($file in $metaFiles) {

@@ -4,14 +4,13 @@
 !/README.md
 !/dev/
 !/maps/
-!/release/
-!/release/**
 !/.github/
 !/.github/**
 !/VERSION
 
-# Собранные zip — только в CI/CD и GitHub Releases
-release/**/*.zip
+# Локальные артефакты сборки (CI публикует в GitHub Releases)
+release/
+dist/
 
 # IDE
 .cursor/

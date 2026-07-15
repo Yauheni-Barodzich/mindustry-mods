@@ -4,7 +4,7 @@ param(
 )
 
 if (-not $Out) {
-    $Out = Join-Path $PSScriptRoot "..\..\release\client\CONTENT-dune-start.zip"
+    $Out = Join-Path $PSScriptRoot "..\..\dist\CONTENT-dune-start.zip"
 }
 
 & (Join-Path $PSScriptRoot "..\pack-content-mod.ps1") -ModDir $PSScriptRoot -Out $Out

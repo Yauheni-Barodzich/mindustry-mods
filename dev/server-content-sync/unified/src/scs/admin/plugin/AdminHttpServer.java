@@ -717,7 +717,7 @@ public class AdminHttpServer {
             json(ex, 404, "{\"error\":\"Not found\"}");
             return;
         }
-        if (name.contains("server-admin") || name.contains("server-content-sync")) {
+        if (ScsConstants.isProtectedModFile(name)) {
             json(ex, 403, "{\"error\":\"Protected mod\"}");
             return;
         }

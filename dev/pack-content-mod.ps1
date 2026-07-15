@@ -15,7 +15,7 @@ $modName = (Get-Content (Join-Path $src "mod.hjson") -Raw) -match 'name:\s*"(.+)
 $modName = if ($Matches) { $Matches[1] } else { Split-Path $src -Leaf }
 
 if (-not $Out) {
-    $Out = Join-Path $src "..\..\release\client\CONTENT-$modName.zip"
+    $Out = Join-Path $src "..\..\dist\CONTENT-$modName.zip"
 }
 
 $outPath = [System.IO.Path]::GetFullPath($Out)
