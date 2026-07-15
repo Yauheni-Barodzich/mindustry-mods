@@ -51,7 +51,8 @@ foreach ($file in $metaFiles) {
     # Только поле version: в начале строки, не minGameVersion
     $updated = $content -replace '(?m)^version:\s*"[^"]*"', "version: `"$version`""
     if ($updated -eq $content) {
-        throw "version field not updated in $file"
+        Write-Host "Already $version in $file"
+        continue
     }
     Set-Content -Path $file -Value $updated -NoNewline
     Write-Host "Updated $file"
@@ -62,7 +63,8 @@ $g = Get-Content $gradle -Raw
 # Только project version, не mindustryVersion
 $g2 = $g -replace "(?m)^    version = '[^']*'", "    version = '$version'"
 if ($g2 -eq $g) {
-    throw "gradle project version not updated"
+    Write-Host "Gradle version already $version"
+} else {
+    Set-Content -Path $gradle -Value $g2 -NoNewline
+    Write-Host "Updated $gradle"
 }
-Set-Content -Path $gradle -Value $g2 -NoNewline
-Write-Host "Updated $gradle"
