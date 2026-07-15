@@ -27,7 +27,7 @@ allprojects {
     }
 
     ext {
-        mindustryversion = '1.0.0'
+        mindustryVersion = 'v159.1'
     }
 
     dependencies {

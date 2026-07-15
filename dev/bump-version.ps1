@@ -48,7 +48,8 @@ $metaFiles = @(
 
 foreach ($file in $metaFiles) {
     $content = Get-Content $file -Raw
-    $updated = $content -replace 'version:\s*"[^"]*"', "version: `"$version`""
+    # Только поле version: в начале строки, не minGameVersion
+    $updated = $content -replace '(?m)^version:\s*"[^"]*"', "version: `"$version`""
     if ($updated -eq $content) {
         throw "version field not updated in $file"
     }
@@ -58,9 +59,10 @@ foreach ($file in $metaFiles) {
 
 $gradle = "dev/server-content-sync/build.gradle"
 $g = Get-Content $gradle -Raw
-$g2 = $g -replace "version = '[^']*'", "version = '$version'"
+# Только project version, не mindustryVersion
+$g2 = $g -replace "(?m)^    version = '[^']*'", "    version = '$version'"
 if ($g2 -eq $g) {
-    throw "gradle version not updated"
+    throw "gradle project version not updated"
 }
 Set-Content -Path $gradle -Value $g2 -NoNewline
 Write-Host "Updated $gradle"

@@ -52,6 +52,7 @@ Write-Host "==> server-content-sync (gradle)"
 Push-Location $scs
 try {
     & .\gradlew.bat :plugin:jar :client:jar :admin-plugin:jar :admin-client:jar
+    if ($LASTEXITCODE -ne 0) { throw "Gradle build failed with exit code $LASTEXITCODE" }
 } finally {
     Pop-Location
 }
