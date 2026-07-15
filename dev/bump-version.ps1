@@ -35,7 +35,7 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     }
 }
 
-Set-Content -Path "VERSION" -Value $version -NoNewline
+[System.IO.File]::WriteAllText((Join-Path (Get-Location) "VERSION"), $version)
 Write-Host "VERSION -> $version"
 
 $metaFiles = @(
