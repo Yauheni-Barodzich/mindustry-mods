@@ -1,0 +1,30 @@
+type: flying
+flying: false
+name: Вездеход-сборщик
+description: Медленный вездеход с большим трюмом. Добывает любую руду. Разгрузка вплотную к ядру или контейнеру. Лимит: 3.
+speed: 0.25
+rotateSpeed: 1.4
+hitSize: 18
+health: 200
+armor: 2
+itemCapacity: 120
+range: 1
+isEnemy: false
+omniMovement: false
+rotateMoveFirst: true
+shadowElevation: 0
+drawSoftShadow: false
+mineTier: 5
+mineSpeed: 6
+mineRange: 55
+mineFloor: true
+mineWalls: false
+commands: [
+  move
+  mine
+]
+defaultCommand: mine
+canBoost: false
+alwaysCreateOutline: true
+weapons: []
+research: rover-factory

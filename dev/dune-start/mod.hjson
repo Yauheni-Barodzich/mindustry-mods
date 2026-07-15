@@ -1,0 +1,6 @@
+name: "dune-start"
+displayName: "Дюна: Старт"
+author: "borodich"
+description: "Ранняя техника и блоки в духе Дюны: песок, добыча, лёгкая оборона и транспорт."
+version: "0.1.0"
+minGameVersion: "159"

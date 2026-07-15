@@ -1,0 +1,22 @@
+type: UnitFactory
+name: Гараж вездеходов
+description: Собирает вездеходы-сборщики. Не требует энергии.
+size: 3
+health: 550
+armor: 1
+category: units
+research: core-shard
+researchCostMultiplier: 0.2
+hasPower: false
+requirements: [
+  copper/50
+]
+plans: [
+  {
+    unit: sand-rover
+    time: 300
+    requirements: [
+      copper/5
+    ]
+  }
+]
