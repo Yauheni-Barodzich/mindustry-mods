@@ -62,7 +62,8 @@ jobs:
 
           if ($event -eq 'workflow_dispatch') {
             if ([string]::IsNullOrWhiteSpace($raw)) {
-              $current = (Get-Content VERSION -Raw).Trim()
+              $pkg = Get-Content package.json -Raw -Encoding UTF8 | ConvertFrom-Json
+              $current = [string]$pkg.version
               $version = Get-NextSemver $current $bump
               Write-Host "Auto-increment ($bump): $current -> $version"
             } else {
@@ -87,8 +88,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add VERSION dev/
-          if (-not (git status --porcelain VERSION dev/)) {
+          git add package.json dev/
+          if (-not (git status --porcelain package.json dev/)) {
             Write-Host "Versions already match, skip commit"
             exit 0
           }

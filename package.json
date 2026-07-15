@@ -1,0 +1,12 @@
+{
+  "name": "mindustry-mods",
+  "version": "1.0.2",
+  "description": "Моды для Mindustry v159+: dune-start и sync-admin",
+  "private": true,
+  "mods": [
+    "dune-start",
+    "sync-admin"
+  ],
+  "minGameVersion": "159",
+  "repository": "https://github.com/Yauheni-Barodzich/mindustry-mods"
+}

@@ -6,7 +6,7 @@
 !/maps/
 !/.github/
 !/.github/**
-!/VERSION
+!/package.json
 
 # Локальные артефакты сборки (CI публикует в GitHub Releases)
 release/

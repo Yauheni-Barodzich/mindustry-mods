@@ -1,4 +1,4 @@
-# Синхронизирует VERSION во все mod.hjson / plugin.hjson и gradle
+# Читает/пишет version в package.json и синхронизирует в mod.hjson / plugin.hjson / gradle
 param(
     [string]$Version,
     [ValidateSet("patch", "minor", "major")]
@@ -9,10 +9,15 @@ $ErrorActionPreference = "Stop"
 $repo = Join-Path $PSScriptRoot ".."
 Set-Location $repo
 
+$packagePath = Join-Path (Get-Location) "package.json"
+if (-not (Test-Path $packagePath)) {
+    throw "package.json not found"
+}
+
 function Get-NextSemver {
     param([string]$Current, [string]$Kind)
     if ($Current -notmatch '^(\d+)\.(\d+)\.(\d+)$') {
-        throw "Invalid VERSION: $Current"
+        throw "Invalid version: $Current"
     }
     $major = [int]$Matches[1]
     $minor = [int]$Matches[2]
@@ -24,8 +29,20 @@ function Get-NextSemver {
     }
 }
 
+function Get-PackageVersion {
+    $pkg = Get-Content $packagePath -Raw -Encoding UTF8 | ConvertFrom-Json
+    return [string]$pkg.version
+}
+
+function Set-PackageVersion([string]$NewVersion) {
+    $raw = [System.IO.File]::ReadAllText($packagePath)
+    $updated = [regex]::Replace($raw, '("version"\s*:\s*")[^"]*(")', "`${1}$NewVersion`${2}")
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($packagePath, $updated, $utf8)
+}
+
 if ([string]::IsNullOrWhiteSpace($Version)) {
-    $current = (Get-Content "VERSION" -Raw).Trim()
+    $current = Get-PackageVersion
     $version = Get-NextSemver $current $Increment
     Write-Host "Auto-increment ($Increment): $current -> $version"
 } else {
@@ -35,8 +52,8 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     }
 }
 
-[System.IO.File]::WriteAllText((Join-Path (Get-Location) "VERSION"), $version)
-Write-Host "VERSION -> $version"
+Set-PackageVersion $version
+Write-Host "package.json version -> $version"
 
 $metaFiles = @(
     "dev/dune-start/mod.hjson",
@@ -46,23 +63,23 @@ $metaFiles = @(
 
 foreach ($file in $metaFiles) {
     $content = Get-Content $file -Raw
-    # Только поле version: в начале строки, не minGameVersion
     $updated = $content -replace '(?m)^version:\s*"[^"]*"', "version: `"$version`""
     if ($updated -eq $content) {
         Write-Host "Already $version in $file"
         continue
     }
-    Set-Content -Path $file -Value $updated -NoNewline
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText((Join-Path (Get-Location) $file), $updated, $utf8)
     Write-Host "Updated $file"
 }
 
 $gradle = "dev/server-content-sync/build.gradle"
 $g = Get-Content $gradle -Raw
-# Только project version, не mindustryVersion
 $g2 = $g -replace "(?m)^    version = '[^']*'", "    version = '$version'"
 if ($g2 -eq $g) {
     Write-Host "Gradle version already $version"
 } else {
-    Set-Content -Path $gradle -Value $g2 -NoNewline
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText((Join-Path (Get-Location) $gradle), $g2, $utf8)
     Write-Host "Updated $gradle"
 }

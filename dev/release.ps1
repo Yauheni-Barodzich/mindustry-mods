@@ -13,13 +13,14 @@ if ($Version) {
     & (Join-Path $PSScriptRoot "bump-version.ps1") -Version $Version
 } else {
     & (Join-Path $PSScriptRoot "bump-version.ps1") -Increment $Increment
-    $Version = (Get-Content "VERSION" -Raw).Trim()
 }
 
+$pkg = Get-Content "package.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+$Version = [string]$pkg.version
 $tag = if ($Version -match '^v') { $Version } else { "v$Version" }
 
-git add VERSION dev/
-if (git status --porcelain VERSION dev/) {
+git add package.json dev/
+if (git status --porcelain package.json dev/) {
     git commit -m "chore: release $tag"
     git push origin main
 }
