@@ -2,7 +2,7 @@ name: "server-sync-admin"
 displayName: "Синхронизация и админка"
 author: "borodich"
 description: "Скачивает моды и карты с сервера и даёт UI удалённой админки."
-version: "1.0.1"
+version: "1.0.2"
 minGameVersion: "159"
 main: "scs.ScsClient"
 hidden: true
