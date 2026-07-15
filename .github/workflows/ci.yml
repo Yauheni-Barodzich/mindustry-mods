@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dev/**"
+      - ".github/workflows/**"
+      - ".gitignore"
+  pull_request:
+    branches: [main]
+    paths:
+      - "dev/**"
+      - ".github/workflows/**"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Build all mods
+        shell: pwsh
+        run: ./dev/build-all.ps1
+
+      - name: Verify release artifacts
+        shell: pwsh
+        run: |
+          $required = @(
+            "release/client/CLIENT-admin.zip",
+            "release/client/CLIENT-sync-content.zip",
+            "release/client/CONTENT-dune-start.zip",
+            "release/server/SERVER-admin.zip",
+            "release/server/SERVER-sync-content.zip",
+            "release/server/CONTENT-dune-start.zip"
+          )
+          foreach ($f in $required) {
+            if (-not (Test-Path $f)) { throw "Missing artifact: $f" }
+            Write-Host "OK $f"
+          }
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mindustry-mods-${{ github.sha }}
+          retention-days: 14
+          path: |
+            release/client/*.zip
+            release/server/*.zip
+
+  # На push в main: обновить release/ в репозитории (без ручной сборки)
+  sync-release:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Build all mods
+        shell: pwsh
+        run: ./dev/build-all.ps1
+
+      - name: Commit release artifacts
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add release/
+          if (-not (git status --porcelain release/)) {
+            Write-Host "release/ unchanged"
+            exit 0
+          }
+          git commit -m "ci: update release artifacts [skip ci]"
+          git push

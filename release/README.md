@@ -1,44 +1,76 @@
-# Релизные архивы модов
+# CI/CD через GitHub Actions
 
-## Автоматический релиз (рекомендуется)
+## Схема
 
-Одна команда — сборка, коммит `release/`, тег, публикация на GitHub:
+```
+push в main (dev/**)
+    │
+    ▼
+┌─────────┐     ┌──────────────┐
+│   CI    │────▶│ sync-release │──▶ коммит release/ в main [skip ci]
+│ build   │     └──────────────┘
+└─────────┘
 
+push тега v*  или  Run workflow "Release"
+    │
+    ▼
+┌──────────┐
+│ Release  │──▶ GitHub Releases (6 zip для скачивания)
+│ build+CD │
+└──────────┘
+```
+
+## Workflows
+
+| Файл | Когда | Что делает |
+|------|-------|------------|
+| `.github/workflows/ci.yml` | push/PR в `main` при изменении `dev/**` | Сборка, проверка zip, артефакты |
+| `.github/workflows/ci.yml` → `sync-release` | push в `main` | Автокоммит `release/` ботом |
+| `.github/workflows/release.yml` | тег `v*` или Run workflow | Публикация **GitHub Release** |
+
+## Полностью через Actions (без локальной сборки)
+
+### Шаг 1 — CI (автоматически)
+
+Пушите код в `main` → Actions сам:
+1. Соберёт моды
+2. Обновит `release/` в репозитории
+
+Ничего запускать не нужно.
+
+### Шаг 2 — CD (публикация Release)
+
+**Вариант A — из GitHub UI:**
+1. [Actions → Release](https://github.com/Yauheni-Barodzich/mindustry-mods/actions/workflows/release.yml)
+2. **Run workflow** → версия `0.1.0`
+3. Появится [Release](https://github.com/Yauheni-Barodzich/mindustry-mods/releases) с zip
+
+**Вариант B — тег:**
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+**Вариант C — локально одной командой:**
 ```powershell
 cd dev
 .\release.ps1 -Version 0.1.0
 ```
 
-Что происходит:
-1. `build-all.ps1` собирает zip в `release/`
-2. `git commit` + `push` в `main`
-3. `git tag v0.1.0` + `push` тега
-4. **GitHub Actions** (`.github/workflows/release.yml`) пересобирает моды и создаёт **Release** с 6 zip
+## Куда ставить скачанные файлы
 
-Статус: [Actions](https://github.com/Yauheni-Barodzich/mindustry-mods/actions) → релиз: [Releases](https://github.com/Yauheni-Barodzich/mindustry-mods/releases)
-
-## Без локального git — только GitHub
-
-1. Репозиторий → **Actions** → **Release** → **Run workflow**
-2. Ввести версию, например `0.1.0`
-3. Workflow соберёт и опубликует Release
-
-## Packages не нужны
-
-Для zip-модов Mindustry используйте только **Releases**, не Packages.
-
-## Куда ставить файлы
-
-| Файлы из Release | Куда |
-|------------------|------|
+| Файлы | Куда |
+|-------|------|
 | `CLIENT-*`, `CONTENT-*` | `%AppData%/Mindustry/mods/` |
 | `SERVER-*`, `CONTENT-*` | `config/mods/` на сервере |
 
-## Только локальная сборка
+## Локальная сборка (опционально)
 
 ```powershell
 cd dev
 .\build-all.ps1
 ```
 
-Обновляет `release/` и копирует в `mods/` / `server-mods/` для игры.
+## Packages
+
+Не используются — только **Releases**.

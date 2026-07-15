@@ -14,6 +14,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-and-release:
     runs-on: windows-latest
@@ -41,6 +45,21 @@ jobs:
       - name: Build mods
         shell: pwsh
         run: ./dev/build-all.ps1
+
+      - name: Verify release artifacts
+        shell: pwsh
+        run: |
+          $required = @(
+            "release/client/CLIENT-admin.zip",
+            "release/client/CLIENT-sync-content.zip",
+            "release/client/CONTENT-dune-start.zip",
+            "release/server/SERVER-admin.zip",
+            "release/server/SERVER-sync-content.zip",
+            "release/server/CONTENT-dune-start.zip"
+          )
+          foreach ($f in $required) {
+            if (-not (Test-Path $f)) { throw "Missing artifact: $f" }
+          }
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
