@@ -92,7 +92,7 @@ jobs:
             Write-Host "Versions already match, skip commit"
             exit 0
           }
-          git commit -m "chore: release ${{ steps.meta.outputs.tag }} [skip ci]"
+          git commit -m "chore: release ${{ steps.meta.outputs.tag }}"
           git push
 
       - name: Build mods
