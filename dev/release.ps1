@@ -24,7 +24,13 @@ if (git status --porcelain VERSION dev/) {
     git push origin main
 }
 
-if (-not (git rev-parse $tag 2>$null)) {
+$tagExists = $false
+try {
+    git rev-parse --verify "$tag^{commit}" 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) { $tagExists = $true }
+} catch {}
+
+if (-not $tagExists) {
     git tag $tag
 }
 
