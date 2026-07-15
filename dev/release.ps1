@@ -20,7 +20,7 @@ $tag = if ($Version -match '^v') { $Version } else { "v$Version" }
 
 git add VERSION dev/
 if (git status --porcelain VERSION dev/) {
-    git commit -m "chore: release $tag"
+    git commit -m "chore: release $tag [skip ci]"
     git push origin main
 }
 
