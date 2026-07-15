@@ -1,4 +1,6 @@
-# CI/CD через GitHub Actions
+# CI/CD и релизы
+
+Zip-архивы **не хранятся в git** — только исходники в `dev/`.
 
 ## Схема
 
@@ -6,71 +8,56 @@
 push в main (dev/**)
     │
     ▼
-┌─────────┐     ┌──────────────┐
-│   CI    │────▶│ sync-release │──▶ коммит release/ в main [skip ci]
-│ build   │     └──────────────┘
-└─────────┘
+ CI: сборка → проверка → артефакты Actions (14 дней)
 
-push тега v*  или  Run workflow "Release"
+тег v*  или  Run workflow "Release"
     │
     ▼
-┌──────────┐
-│ Release  │──▶ GitHub Releases (6 zip для скачивания)
-│ build+CD │
-└──────────┘
+ Release: сборка → GitHub Releases (постоянно)
 ```
 
 ## Workflows
 
-| Файл | Когда | Что делает |
-|------|-------|------------|
-| `.github/workflows/ci.yml` | push/PR в `main` при изменении `dev/**` | Сборка, проверка zip, артефакты |
-| `.github/workflows/ci.yml` → `sync-release` | push в `main` | Автокоммит `release/` ботом |
-| `.github/workflows/release.yml` | тег `v*` или Run workflow | Публикация **GitHub Release** |
+| Workflow | Когда | Результат |
+|----------|-------|-----------|
+| `ci.yml` | push/PR в `main` | сборка, артефакты в Actions |
+| `release.yml` | тег `v*` / Run workflow | **GitHub Releases** для скачивания |
 
-## Полностью через Actions (без локальной сборки)
+## Где взять zip
 
-### Шаг 1 — CI (автоматически)
+| Нужно | Где |
+|-------|-----|
+| Последняя сборка main | Actions → CI → Artifacts |
+| Стабильная версия | [Releases](https://github.com/Yauheni-Barodzich/mindustry-mods/releases) |
+| Локально | `dev\build-all.ps1` → `release/` (в .gitignore) |
 
-Пушите код в `main` → Actions сам:
-1. Соберёт моды
-2. Обновит `release/` в репозитории
+## Опубликовать версию
 
-Ничего запускать не нужно.
+**GitHub UI:** Actions → Release → Run workflow → `0.1.0`
 
-### Шаг 2 — CD (публикация Release)
-
-**Вариант A — из GitHub UI:**
-1. [Actions → Release](https://github.com/Yauheni-Barodzich/mindustry-mods/actions/workflows/release.yml)
-2. **Run workflow** → версия `0.1.0`
-3. Появится [Release](https://github.com/Yauheni-Barodzich/mindustry-mods/releases) с zip
-
-**Вариант B — тег:**
+**Тег:**
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-**Вариант C — локально одной командой:**
+**Локально:**
 ```powershell
 cd dev
 .\release.ps1 -Version 0.1.0
 ```
 
-## Куда ставить скачанные файлы
+## Куда ставить
 
 | Файлы | Куда |
 |-------|------|
 | `CLIENT-*`, `CONTENT-*` | `%AppData%/Mindustry/mods/` |
 | `SERVER-*`, `CONTENT-*` | `config/mods/` на сервере |
 
-## Локальная сборка (опционально)
+## Имена архивов
 
-```powershell
-cd dev
-.\build-all.ps1
-```
-
-## Packages
-
-Не используются — только **Releases**.
+| Префикс | Назначение |
+|---------|------------|
+| `CLIENT-*` | только клиент |
+| `SERVER-*` | только сервер |
+| `CONTENT-*` | клиент и сервер |

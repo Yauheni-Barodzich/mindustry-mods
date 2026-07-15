@@ -12,7 +12,7 @@
 | `CLIENT-*.zip` | только клиент → `%AppData%/Mindustry/mods/` |
 | `CONTENT-*.zip` | сервер **и** клиент (игровой контент) |
 
-`dev\build-all.ps1` кладёт готовые zip в **`release/`** (коммитятся в git) и копирует в `mods/` / `server-mods/` для локальной игры.
+`dev\build-all.ps1` кладёт zip в `release/` (локально, не в git). Публикация — через GitHub Actions → Releases.
 
 **На клиент нельзя класть `SERVER-*.zip`** — игра упадёт при старте.
 

@@ -1,5 +1,5 @@
 # Сборка всех наших модов в .zip
-# release/     -> в git (готовые архивы)
+# release/     -> локально (zip в .gitignore, публикуется через CI/CD)
 # mods/        -> локальный клиент Mindustry
 # server-mods/ -> локальная папка для заливки на сервер
 $ErrorActionPreference = "Stop"
@@ -87,4 +87,4 @@ foreach ($a in $serverArtifacts) {
     Publish-Artifact (Join-Path $root $a.Src) $a.Dst @($releaseServer, $serverMods)
 }
 
-Write-Host "Done. Git: release\ | Client: mods\ | Server deploy: server-mods\"
+Write-Host "Done. Local: release\ | Client: mods\ | Server deploy: server-mods\ | Publish: GitHub Releases"

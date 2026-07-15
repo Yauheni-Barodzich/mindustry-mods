@@ -34,7 +34,7 @@ dune-start/
 ..\build-all.ps1
 ```
 
-Скрипт кладёт `release/client/CONTENT-dune-start.zip` (в git).
+Скрипт кладёт `release/client/CONTENT-dune-start.zip` (локально, не коммитится).
 
 
 ## Сейчас в моде

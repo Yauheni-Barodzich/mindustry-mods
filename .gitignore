@@ -1,4 +1,4 @@
-# Runtime Mindustry — в git только разработка и релизные артефакты
+# Runtime Mindustry — в git только исходники
 /*
 !/.gitignore
 !/dev/
@@ -7,6 +7,9 @@
 !/release/**
 !/.github/
 !/.github/**
+
+# Собранные zip — только в CI/CD и GitHub Releases
+release/**/*.zip
 
 # IDE
 .cursor/
