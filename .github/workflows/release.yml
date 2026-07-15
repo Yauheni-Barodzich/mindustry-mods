@@ -7,9 +7,18 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Версия релиза (например 1.0.1)"
-        required: true
+        description: "Версия (пусто = авто +1 patch)"
+        required: false
         type: string
+      bump:
+        description: "Инкремент если version пустой"
+        required: false
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
@@ -36,17 +45,38 @@ jobs:
         id: meta
         shell: pwsh
         run: |
-          $raw = "${{ github.event.inputs.version }}"
-          if ([string]::IsNullOrWhiteSpace($raw)) {
+          function Get-NextSemver($current, $kind) {
+            if ($current -notmatch '^(\d+)\.(\d+)\.(\d+)$') { throw "Invalid VERSION: $current" }
+            $major = [int]$Matches[1]; $minor = [int]$Matches[2]; $patch = [int]$Matches[3]
+            switch ($kind) {
+              'major' { return '{0}.0.0' -f ($major + 1) }
+              'minor' { return '{0}.{1}.0' -f $major, ($minor + 1) }
+              default { return '{0}.{1}.{2}' -f $major, $minor, ($patch + 1) }
+            }
+          }
+
+          $raw = "${{ github.event.inputs.version }}".Trim()
+          $event = "${{ github.event_name }}"
+          $bump = "${{ github.event.inputs.bump }}"
+          if ([string]::IsNullOrWhiteSpace($bump)) { $bump = 'patch' }
+
+          if ($event -eq 'workflow_dispatch') {
+            if ([string]::IsNullOrWhiteSpace($raw)) {
+              $current = (Get-Content VERSION -Raw).Trim()
+              $version = Get-NextSemver $current $bump
+              Write-Host "Auto-increment ($bump): $current -> $version"
+            } else {
+              $version = $raw -replace '^v', ''
+            }
+            $tag = "v$version"
+          } else {
             $tag = "${{ github.ref_name }}"
             $version = $tag -replace '^v', ''
-          } else {
-            $version = $raw -replace '^v', ''
-            $tag = if ($raw -match '^v') { $raw } else { "v$raw" }
           }
+
           "tag=$tag" >> $env:GITHUB_OUTPUT
           "version=$version" >> $env:GITHUB_OUTPUT
-          Write-Host "Release $tag ($version)"
+          Write-Host "Release $tag"
 
       - name: Bump versions in sources
         shell: pwsh

@@ -1,17 +1,39 @@
 # Синхронизирует VERSION во все mod.hjson / plugin.hjson и gradle
 param(
-    [Parameter(Mandatory = $true)]
-    [string]$Version
+    [string]$Version,
+    [ValidateSet("patch", "minor", "major")]
+    [string]$Increment = "patch"
 )
 
 $ErrorActionPreference = "Stop"
-$version = $Version -replace '^v', ''
-if ($version -notmatch '^\d+\.\d+\.\d+') {
-    throw "Invalid semver: $Version (expected X.Y.Z)"
-}
-
 $repo = Join-Path $PSScriptRoot ".."
 Set-Location $repo
+
+function Get-NextSemver {
+    param([string]$Current, [string]$Kind)
+    if ($Current -notmatch '^(\d+)\.(\d+)\.(\d+)$') {
+        throw "Invalid VERSION: $Current"
+    }
+    $major = [int]$Matches[1]
+    $minor = [int]$Matches[2]
+    $patch = [int]$Matches[3]
+    switch ($Kind) {
+        "major" { return "{0}.0.0" -f ($major + 1) }
+        "minor" { return "{0}.{1}.0" -f $major, ($minor + 1) }
+        default { return "{0}.{1}.{2}" -f $major, $minor, ($patch + 1) }
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $current = (Get-Content "VERSION" -Raw).Trim()
+    $version = Get-NextSemver $current $Increment
+    Write-Host "Auto-increment ($Increment): $current -> $version"
+} else {
+    $version = $Version -replace '^v', ''
+    if ($version -notmatch '^\d+\.\d+\.\d+$') {
+        throw "Invalid semver: $Version (expected X.Y.Z)"
+    }
+}
 
 Set-Content -Path "VERSION" -Value $version -NoNewline
 Write-Host "VERSION -> $version"

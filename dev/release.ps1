@@ -1,17 +1,22 @@
-# Тег + GitHub Release (бамп версий и сборка в CI/CD)
+# Тег + GitHub Release (автобамп patch по умолчанию)
 param(
-    [Parameter(Mandatory = $true)]
-    [string]$Version
+    [string]$Version,
+    [ValidateSet("patch", "minor", "major")]
+    [string]$Increment = "patch"
 )
 
 $ErrorActionPreference = "Stop"
 $repo = Join-Path $PSScriptRoot ".."
-$tag = if ($Version -match '^v') { $Version } else { "v$Version" }
-
 Set-Location $repo
 
-Write-Host "==> Optional local bump (CI сделает то же при релизе)"
-& (Join-Path $PSScriptRoot "bump-version.ps1") -Version $Version
+if ($Version) {
+    & (Join-Path $PSScriptRoot "bump-version.ps1") -Version $Version
+} else {
+    & (Join-Path $PSScriptRoot "bump-version.ps1") -Increment $Increment
+    $Version = (Get-Content "VERSION" -Raw).Trim()
+}
+
+$tag = if ($Version -match '^v') { $Version } else { "v$Version" }
 
 git add VERSION dev/
 if (git status --porcelain VERSION dev/) {
@@ -25,4 +30,5 @@ if (-not (git rev-parse $tag 2>$null)) {
 
 git push origin $tag
 
-Write-Host "Done: https://github.com/Yauheni-Barodzich/mindustry-mods/releases/tag/$tag"
+Write-Host "Released $tag"
+Write-Host "https://github.com/Yauheni-Barodzich/mindustry-mods/releases/tag/$tag"

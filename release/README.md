@@ -38,24 +38,36 @@ push в main (dev/**)
 | Когда | Что происходит |
 |-------|----------------|
 | push в `main` | версии **не** меняются |
-| Release (тег / Run workflow) | `bump-version.ps1` обновляет `VERSION`, все `mod.hjson`, `gradle` → коммит → сборка |
+| Release (тег / Run workflow) | авто **+1 patch** (или minor/major), обновляет `VERSION` + все `mod.hjson` |
 
-Бамп **только при релизе**, не автоматически на каждый push.
+Бамп **только при релизе**, не на каждый push.
+
+### Автоинкремент
+
+| Способ | Результат |
+|--------|-----------|
+| `.\release.ps1` | `1.0.0` → `1.0.1` |
+| `.\release.ps1 -Increment minor` | `1.0.0` → `1.1.0` |
+| `.\release.ps1 -Version 2.0.0` | явная версия |
+| Actions → Release → version **пусто** | +1 patch |
+| Actions → Release → bump **minor/major** | соответственно |
 
 ## Опубликовать версию
 
-**GitHub UI:** Actions → Release → Run workflow → `0.1.0`
-
-**Тег:**
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
+**GitHub UI:** Actions → Release → Run workflow (version пусто = +1 patch)
 
 **Локально:**
 ```powershell
 cd dev
-.\release.ps1 -Version 0.1.0
+.\release.ps1              # 1.0.0 -> 1.0.1
+.\release.ps1 -Increment minor
+.\release.ps1 -Version 2.0.0 # явно
+```
+
+**Тег вручную:**
+```bash
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 ## Куда ставить
