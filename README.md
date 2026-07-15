@@ -1,15 +1,15 @@
 # mindustry-admin-sync-mods
 
-Моды для **Mindustry v159+**.
+**RU** — Набор модов для **Mindustry v159+**: игровой контент в духе Дюны и инструменты для своего dedicated-сервера. Игроки через клиент **скачивают моды и карты с сервера** перед входом; владелец сервера **управляет им из игры** — статус, рестарт, моды, карты, правила, сообщения игрокам. Оба архива ставятся в `mods/` (на сервере — в `config/mods/`).
 
-Скачать: [Releases](https://github.com/Yauheni-Barodzich/mindustry-mods/releases)
+**EN** — Mod pack for **Mindustry v159+**: Dune-inspired gameplay plus tools for your dedicated server. Players **sync mods and maps from the server** before joining; the server owner **manages the server from the game** — status, restart, mods, maps, rules, player messages. Install both zips into `mods/` (on a server: `config/mods/`).
 
-| Архив | Что это |
-|-------|---------|
-| `dune-start.zip` | Игровой контент: гараж и вездеход-сборщик |
-| `sync-admin.zip` | Синхронизация модов/карт с сервера + удалённая админка |
+Скачать / Download: [Releases](https://github.com/Yauheni-Barodzich/mindustry-sync-admin-mods/releases)
 
-Оба zip ставятся **одинаково** на клиент и на сервер.
+| Архив / Archive | RU | EN |
+|-----------------|----|----|
+| `dune-start.zip` | Игровой контент: гараж и вездеход-сборщик | Gameplay: rover factory and sand-harvesting rover |
+| `sync-admin.zip` | Синхронизация модов/карт + удалённая админка | Mod/map sync from server + remote admin panel |
 
 ---
 
