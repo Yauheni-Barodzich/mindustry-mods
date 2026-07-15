@@ -1,13 +1,15 @@
-# Runtime Mindustry — в git только разработка
+# Runtime Mindustry — в git только разработка и релизные артефакты
 /*
 !/.gitignore
 !/dev/
 !/maps/
+!/release/
+!/release/**
 
 # IDE
 .cursor/
 
-# Артефакты сборки
+# Артефакты сборки (промежуточные)
 **/.gradle/
 **/build/
 **/dist/

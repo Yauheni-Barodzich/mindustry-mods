@@ -2,19 +2,43 @@
 
 Синхронизация **модов** и **карт** со своего Mindustry-сервера (v159+).
 
-## Артефакты
+## Имена архивов
 
-После `gradlew :plugin:jar :client:jar`:
+Префикс в имени файла = куда класть:
 
 | Файл | Куда |
 |------|------|
-| `plugin/build/libs/server-content-sync-plugin.jar` | сервер: `config/mods/` |
-| `client/build/libs/server-content-sync-client.jar` | клиент: `%AppData%/Mindustry/mods/` |
+| `SERVER-*.zip` | только сервер → `config/mods/` |
+| `CLIENT-*.zip` | только клиент → `%AppData%/Mindustry/mods/` |
+| `CONTENT-*.zip` | сервер **и** клиент (игровой контент) |
+
+`dev\build-all.ps1` кладёт готовые zip в **`release/`** (коммитятся в git) и копирует в `mods/` / `server-mods/` для локальной игры.
+
+**На клиент нельзя класть `SERVER-*.zip`** — игра упадёт при старте.
+
+Наши артефакты:
+
+| Файл | Назначение |
+|------|------------|
+| `SERVER-sync-content.zip` | плагин раздачи модов/карт |
+| `CLIENT-sync-content.zip` | клиент синхронизации |
+| `SERVER-admin.zip` | плагин админ-API |
+| `CLIENT-admin.zip` | клиент админки |
+| `CONTENT-dune-start.zip` | контент-мод Дюна |
+
+## Артефакты
+
+После `gradlew :plugin:jar :client:jar` (или `dev\build-all.ps1`):
+
+| Файл | Куда |
+|------|------|
+| `plugin/build/libs/SERVER-sync-content.zip` | сервер: `config/mods/` |
+| `client/build/libs/CLIENT-sync-content.zip` | клиент: `%AppData%/Mindustry/mods/` |
 
 ## Сервер
 
-1. Положи `server-content-sync-plugin.jar` в `config/mods/`.
-2. Контент-моды (zip/jar) — туда же; карты — в `config/maps/`.
+1. Положи `SERVER-sync-content.zip` в `config/mods/`.
+2. Контент-моды (`CONTENT-*.zip`) — туда же; карты — в `config/maps/`.
 3. Открой в firewall порт **`gamePort + 1`** (для 6567 → **6568**), либо задай свой в `config/mods/server-content-sync/config.hjson`:
 
 ```hjson
@@ -35,7 +59,7 @@ port: 0
 
 ## Клиент
 
-1. Положи `server-content-sync-client.jar` в `mods/` (мод `hidden`, mismatch не вызывает).
+1. Положи `CLIENT-sync-content.zip` в `mods/` (мод `hidden`, mismatch не вызывает).
 2. Multiplayer → **Content Sync** (или Settings → Server Sync).
 3. Укажи адрес сервера `host:6567` → **Auto URL** даст `http://host:6568`.
 4. **Fetch** → список missing/outdated → **Download missing**.
@@ -58,6 +82,14 @@ port: 0
 gradlew.bat :plugin:jar :client:jar :admin-plugin:jar :admin-client:jar
 ```
 
+Или из корня `dev`:
+
+```powershell
+.\build-all.ps1
+```
+
+Все наши артефакты — **.zip** (контент и Java-моды/плагины).
+
 ---
 
 # Server Admin
@@ -79,12 +111,12 @@ MyStrongPassword123
 
 | Файл | Куда |
 |------|------|
-| `admin-plugin/build/libs/server-admin-plugin.jar` | сервер: `config/mods/` |
-| `admin-client/build/libs/server-admin-client.jar` | клиент: `%AppData%/Mindustry/mods/` |
+| `admin-plugin/build/libs/SERVER-admin.zip` | сервер: `config/mods/` |
+| `admin-client/build/libs/CLIENT-admin.zip` | клиент: `%AppData%/Mindustry/mods/` |
 
 ## Сервер
 
-1. JAR в `config/mods/`, пароль в `admin.password`.
+1. `SERVER-admin.zip` в `config/mods/`, пароль в `admin.password`.
 2. Firewall: порт **`gamePort + 2`** (6567 → **6569**).
 3. Конфиг: `config/mods/server-admin/config.hjson` (`port: 0` = auto).
 4. Рестарт → `admin-status` в консоли.
