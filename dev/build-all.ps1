@@ -61,8 +61,13 @@ try {
 
 function Publish-Artifact($srcPath, $dstName, $targets) {
     if (-not (Test-Path $srcPath)) { throw "Artifact not found: $srcPath" }
+    $srcFull = [System.IO.Path]::GetFullPath($srcPath)
     foreach ($dir in $targets) {
-        $dst = Join-Path $dir $dstName
+        $dst = [System.IO.Path]::GetFullPath((Join-Path $dir $dstName))
+        if ($dst -eq $srcFull) {
+            Write-Host "-> $dst (already built)"
+            continue
+        }
         Copy-Item $srcPath $dst -Force
         Write-Host "-> $dst"
     }
