@@ -1,0 +1,17 @@
+sourceSets.main.java.srcDirs = ['src']
+
+dependencies {
+    implementation project(':common')
+}
+
+jar {
+    archiveFileName = 'server-admin-client.jar'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    from(projectDir) {
+        include 'mod.hjson'
+        include 'bundles/**'
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

@@ -1,0 +1,89 @@
+# Mode template: Survival (waves, no PvP/attack)
+# Created via Server Admin presets.
+
+allowEditRules: false
+infiniteResources: false
+waveTimer: true
+waveSending: true
+waves: true
+airUseSpawns: false
+wavesSpawnAtCores: true
+pvp: false
+pvpAutoPause: false
+pauseDisabled: false
+waitEnemies: false
+attackMode: false
+editor: false
+
+derelictRepair: true
+canGameOver: true
+coreCapture: false
+coreDestroyClear: false
+coreIncinerates: true
+cleanupDeadTeams: true
+onlyDepositCore: false
+allowCoreUnloaders: true
+itemDepositCooldown: 0.5
+enemyCoreBuildRadius: 400
+polygonCoreProtection: false
+placeRangeCheck: false
+
+reactorExplosions: false
+damageExplosions: true
+fire: true
+possessionAllowed: true
+schematicsAllowed: true
+ghostBlocks: true
+hideSpawns: true
+randomWaveAI: false
+unitPayloadUpdate: false
+unitPayloadsExplode: false
+fog: false
+staticFog: true
+lighting: false
+borderDarkness: true
+
+logicUnitControl: true
+logicUnitBuild: false
+logicUnitDeconstruct: false
+worldProcessorPlayerLink: true
+allowEditWorldProcessors: false
+disableWorldProcessors: false
+allowLogicData: false
+
+unitCapVariable: true
+unitCap: 0
+disableUnitCap: false
+unitBuildSpeedMultiplier: 1
+unitCostMultiplier: 1
+unitDamageMultiplier: 1
+unitHealthMultiplier: 1
+unitCrashDamageMultiplier: 1
+unitMineSpeedMultiplier: 1
+unitFactoryActivationDelay: 0
+
+blockHealthMultiplier: 1
+blockDamageMultiplier: 1
+buildCostMultiplier: 1
+buildSpeedMultiplier: 1
+deconstructRefundMultiplier: 0.5
+solarMultiplier: 1
+instantBuild: false
+allowEnvironmentDeconstruct: false
+hideBannedBlocks: false
+blockWhitelist: false
+unitWhitelist: false
+
+dropZoneRadius: 300
+waveSpacing: 7200
+initialWaveSpacing: 0
+winWave: 0
+objectiveTimerMultiplier: 1
+dragMultiplier: 1
+
+showOtherTeamPings: false
+alwaysPlayMusic: false
+disableMusic: false
+musicVolume: 1
+limitMapArea: false
+disableOutsideArea: true

@@ -1,0 +1,41 @@
+allprojects {
+    apply plugin: 'java'
+
+    version = '1.0.0'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    repositories {
+        mavenCentral()
+        ivy {
+            url = 'https://github.com/'
+            patternLayout {
+                artifact '/[organisation]/[module]/releases/download/[revision]/dependencies.jar'
+            }
+            metadataSources { artifact() }
+        }
+        ivy {
+            url = 'https://github.com/'
+            patternLayout {
+                artifact '/[organisation]/[module]/releases/[revision]/download/dependencies.jar'
+            }
+            metadataSources { artifact() }
+        }
+    }
+
+    ext {
+        mindustryVersion = 'v159.1'
+    }
+
+    dependencies {
+        compileOnly "Anuken:Mindustry:$mindustryVersion"
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = 17
+    }
+}

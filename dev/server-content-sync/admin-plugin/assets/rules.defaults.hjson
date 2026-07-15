@@ -1,0 +1,102 @@
+# Mindustry server rules (config/rules.hjson)
+# Defaults from Rules.java — edit via Server Admin or FTP.
+# Complex fields (spawns, teams, loadout, weather, banned*) omitted unless needed.
+
+# --- Mode / waves ---
+allowEditRules: false
+infiniteResources: false
+waveTimer: true
+waveSending: true
+# true = enemy waves on maps that have spawns (survival/attack).
+# PvP-only maps: use mode-pvp preset (waves: false).
+waves: true
+airUseSpawns: false
+wavesSpawnAtCores: true
+pvp: false
+pvpAutoPause: true
+pauseDisabled: false
+waitEnemies: false
+attackMode: false
+editor: false
+
+# --- Cores / game over ---
+derelictRepair: true
+canGameOver: true
+coreCapture: false
+coreDestroyClear: false
+coreIncinerates: true
+cleanupDeadTeams: true
+onlyDepositCore: false
+allowCoreUnloaders: true
+itemDepositCooldown: 0.5
+enemyCoreBuildRadius: 400
+polygonCoreProtection: false
+placeRangeCheck: false
+
+# --- Combat / world ---
+# overridden for this server:
+reactorExplosions: false
+damageExplosions: true
+fire: true
+possessionAllowed: true
+schematicsAllowed: true
+ghostBlocks: true
+hideSpawns: true
+randomWaveAI: false
+unitPayloadUpdate: false
+unitPayloadsExplode: false
+fog: false
+staticFog: true
+lighting: false
+borderDarkness: true
+
+# --- Logic ---
+logicUnitControl: true
+# overridden for this server:
+logicUnitBuild: false
+logicUnitDeconstruct: false
+worldProcessorPlayerLink: true
+allowEditWorldProcessors: false
+disableWorldProcessors: false
+allowLogicData: false
+
+# --- Units ---
+unitCapVariable: true
+unitCap: 0
+disableUnitCap: false
+unitBuildSpeedMultiplier: 1
+unitCostMultiplier: 1
+unitDamageMultiplier: 1
+unitHealthMultiplier: 1
+unitCrashDamageMultiplier: 1
+unitMineSpeedMultiplier: 1
+unitFactoryActivationDelay: 0
+
+# --- Blocks / building ---
+blockHealthMultiplier: 1
+blockDamageMultiplier: 1
+buildCostMultiplier: 1
+buildSpeedMultiplier: 1
+deconstructRefundMultiplier: 0.5
+solarMultiplier: 1
+instantBuild: false
+allowEnvironmentDeconstruct: false
+hideBannedBlocks: false
+blockWhitelist: false
+unitWhitelist: false
+
+# --- Waves timing ---
+dropZoneRadius: 300
+waveSpacing: 7200
+initialWaveSpacing: 0
+winWave: 0
+objectiveTimerMultiplier: 1
+dragMultiplier: 1
+
+# --- Misc ---
+showOtherTeamPings: false
+alwaysPlayMusic: false
+disableMusic: false
+musicVolume: 1
+limitMapArea: false
+disableOutsideArea: true

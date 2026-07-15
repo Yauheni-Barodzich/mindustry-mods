@@ -1,0 +1,2 @@
+rootProject.name = 'server-content-sync'
+include 'common', 'plugin', 'client', 'admin-plugin', 'admin-client'

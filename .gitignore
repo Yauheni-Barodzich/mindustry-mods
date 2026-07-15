@@ -1,0 +1,16 @@
+# Runtime Mindustry — в git только разработка
+/*
+!/.gitignore
+!/dev/
+!/maps/
+
+# IDE
+.cursor/
+
+# Артефакты сборки
+**/.gradle/
+**/build/
+**/dist/
+*.iml
+.idea/
+out/

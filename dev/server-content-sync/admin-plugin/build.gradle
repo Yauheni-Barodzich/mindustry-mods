@@ -1,0 +1,19 @@
+sourceSets.main.java.srcDirs = ['src']
+
+dependencies {
+    implementation project(':common')
+}
+
+jar {
+    archiveFileName = 'server-admin-plugin.jar'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    from(projectDir) {
+        include 'plugin.hjson'
+    }
+    from('assets') {
+        include '**'
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

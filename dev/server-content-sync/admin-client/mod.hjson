@@ -1,0 +1,8 @@
+name: "server-admin-client"
+displayName: "Админ сервера"
+author: "borodich"
+description: "Удалённое управление сервером: статус, рестарт, моды, карты, правила и конфиги."
+version: "1.0.0"
+minGameVersion: "159"
+main: "scs.admin.client.ServerAdminClient"
+hidden: true
