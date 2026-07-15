@@ -1,5 +1,6 @@
 package scs.admin.plugin;
 
+import arc.*;
 import arc.files.*;
 import arc.struct.*;
 import arc.util.*;
@@ -236,14 +237,50 @@ public class AdminHttpServer {
         }
         Log.info("[Admin] Restart requested via API");
         json(ex, 200, "{\"ok\":true,\"message\":\"Server will restart in 3 seconds\"}");
-        arc.Core.app.post(() -> Threads.daemon(() -> {
+        Threads.daemon(() -> {
             try {
                 Thread.sleep(3000);
             } catch (InterruptedException ignored) {
             }
-            Log.info("[Admin] Exiting for restart (use systemd/supervisor to bring back up)");
-            arc.Core.app.exit();
-        }));
+            scheduleServerShutdown("API restart");
+        });
+    }
+
+    /** Graceful shutdown like vanilla `exit` command; systemd/docker must restart the process. */
+    private void scheduleServerShutdown(String reason) {
+        Runnable shutdown = () -> {
+            Log.info("[Admin] Shutting down (@)", reason);
+            try {
+                stop();
+            } catch (Throwable t) {
+                Log.err("[Admin] HTTP stop failed", t);
+            }
+            try {
+                if (Vars.net != null) Vars.net.dispose();
+            } catch (Throwable t) {
+                Log.err("[Admin] net.dispose failed", t);
+            }
+            try {
+                Core.app.exit();
+            } catch (Throwable t) {
+                Log.err("[Admin] Core.app.exit failed", t);
+            }
+            // Headless often ignores exit() off the main thread — force JVM stop for systemd Restart=.
+            Threads.daemon(() -> {
+                try {
+                    Thread.sleep(1500);
+                } catch (InterruptedException ignored) {
+                }
+                Log.info("[Admin] Forcing JVM exit");
+                System.exit(0);
+            });
+        };
+        try {
+            Core.app.post(shutdown);
+        } catch (Throwable t) {
+            Log.err("[Admin] Could not schedule shutdown on main thread", t);
+            shutdown.run();
+        }
     }
 
     /** Broadcast to all connected players via vanilla Call — no client mod required. */

@@ -1,4 +1,4 @@
-# mindustry-mods
+# mindustry-admin-sync-mods
 
 Моды для **Mindustry v159+**.
 
@@ -182,3 +182,9 @@ release.bat         :: патч-релиз и тег на GitHub
 ```
 
 Версия в `package.json`. В git хранятся исходники, zip — только в Releases.
+
+---
+
+## Лицензия
+
+[MIT](LICENSE)
