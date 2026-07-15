@@ -1,50 +1,61 @@
 # mindustry-mods
 
-Моды и плагины Mindustry v159+ для своего сервера.
-
-## Архивы
-
-| Файл | Куда |
-|------|------|
-| `CLIENT-sync-content.zip` | клиент `mods/` |
-| `CLIENT-admin.zip` | клиент `mods/` |
-| `SERVER-sync-content.zip` | сервер `config/mods/` |
-| `SERVER-admin.zip` | сервер `config/mods/` |
-| `CONTENT-dune-start.zip` | **клиент и сервер** |
-
-Префикс: `CLIENT-` — только клиент, `SERVER-` — только сервер, `CONTENT-` — везде.  
-**Не кладите `SERVER-*` на клиент** — игра упадёт.
+Моды для Mindustry v159+.
 
 Скачать: [Releases](https://github.com/Yauheni-Barodzich/mindustry-mods/releases)
 
-## Разработка
+## Установка
 
-```powershell
-cd dev
-.\build-all.ps1    # локальная сборка → release/
+| Архив | Куда |
+|-------|------|
+| `CLIENT-*.zip`, `CONTENT-*.zip` | `%AppData%/Mindustry/mods/` |
+| `SERVER-*.zip`, `CONTENT-*.zip` | `config/mods/` на сервере |
+
+`SERVER-*` — **только сервер**. На клиент не ставить.
+
+## Моды
+
+### CONTENT-dune-start — Дюна: Старт
+
+Игровой контент в духе Дюны: ранняя добыча и техника.
+
+- **Гараж вездеходов** — завод без энергии, 50 меди
+- **Вездеход-сборщик** — добыча руды, трюм 120, лимит 3 на команду
+
+Клиент и сервер должны иметь одинаковую версию.
+
+### SERVER-sync-content + CLIENT-sync-content — Синхронизация
+
+Сервер раздаёт моды и карты по HTTP; клиент скачивает недостающее перед заходом.
+
+**Сервер:** `SERVER-sync-content.zip`, firewall порт `gamePort + 1` (6567 → 6568).
+
+**Клиент:** `CLIENT-sync-content.zip` → Multiplayer → **Content Sync** → адрес `host:6567` → Fetch → Download.
+
+### SERVER-admin + CLIENT-admin — Админка
+
+Удалённое управление сервером: статус, рестарт, моды, карты, правила.
+
+**Сервер:** `SERVER-admin.zip`, пароль в `config/mods/server-admin/admin.password` (только FTP/SSH), firewall `gamePort + 2` (6567 → 6569).
+
+**Клиент:** `CLIENT-admin.zip` → **Server Admin** → адрес сервера → пароль.
+
+## Минимальный набор
+
+**Сервер** `config/mods/`:
+```
+SERVER-sync-content.zip
+SERVER-admin.zip
+CONTENT-dune-start.zip
 ```
 
-Исходники: `dev/dune-start`, `dev/server-content-sync` (JDK 17).
-
-## Релиз
-
-```powershell
-cd dev
-.\release.ps1                 # 1.0.0 → 1.0.1 (patch)
-.\release.ps1 -Increment minor
+**Клиент** `mods/`:
 ```
-
-Или GitHub → **Actions → Release → Run workflow** (version пусто = +1 patch).
-
-Версия в `VERSION`, при релизе обновляются все `mod.hjson`. Zip в git не хранятся — только в Releases.
-
-## CI/CD
-
-| Workflow | Когда |
-|----------|-------|
-| CI | push/PR → сборка, артефакты 14 дней |
-| Release | тег `v*` / Run workflow → GitHub Release |
+CLIENT-sync-content.zip
+CLIENT-admin.zip
+CONTENT-dune-start.zip
+```
 
 ## Карты
 
-`maps/` — карты сервера (например `DUNE.msav`).
+`DUNE.msav` — кладётся на сервер в `config/maps/`, клиент подтянет через sync.
