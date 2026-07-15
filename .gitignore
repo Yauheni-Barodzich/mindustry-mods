@@ -5,6 +5,8 @@
 !/maps/
 !/release/
 !/release/**
+!/.github/
+!/.github/**
 
 # IDE
 .cursor/

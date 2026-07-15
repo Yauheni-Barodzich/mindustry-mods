@@ -1,25 +1,44 @@
 # Релизные архивы модов
 
-Собираются скриптом `dev/build-all.ps1` и **коммитятся в git**.
+## Автоматический релиз (рекомендуется)
 
-| Папка | Куда ставить |
-|-------|----------------|
-| `client/` | `%AppData%/Mindustry/mods/` |
-| `server/` | `config/mods/` на сервере |
+Одна команда — сборка, коммит `release/`, тег, публикация на GitHub:
 
-## Имена
+```powershell
+cd dev
+.\release.ps1 -Version 0.1.0
+```
 
-| Префикс | Назначение |
-|---------|------------|
-| `CLIENT-*` | только клиент |
-| `SERVER-*` | только сервер |
-| `CONTENT-*` | клиент и сервер |
+Что происходит:
+1. `build-all.ps1` собирает zip в `release/`
+2. `git commit` + `push` в `main`
+3. `git tag v0.1.0` + `push` тега
+4. **GitHub Actions** (`.github/workflows/release.yml`) пересобирает моды и создаёт **Release** с 6 zip
 
-## Сборка
+Статус: [Actions](https://github.com/Yauheni-Barodzich/mindustry-mods/actions) → релиз: [Releases](https://github.com/Yauheni-Barodzich/mindustry-mods/releases)
+
+## Без локального git — только GitHub
+
+1. Репозиторий → **Actions** → **Release** → **Run workflow**
+2. Ввести версию, например `0.1.0`
+3. Workflow соберёт и опубликует Release
+
+## Packages не нужны
+
+Для zip-модов Mindustry используйте только **Releases**, не Packages.
+
+## Куда ставить файлы
+
+| Файлы из Release | Куда |
+|------------------|------|
+| `CLIENT-*`, `CONTENT-*` | `%AppData%/Mindustry/mods/` |
+| `SERVER-*`, `CONTENT-*` | `config/mods/` на сервере |
+
+## Только локальная сборка
 
 ```powershell
 cd dev
 .\build-all.ps1
 ```
 
-Скрипт обновляет `release/` и копирует в локальные `mods/` и `server-mods/` для игры.
+Обновляет `release/` и копирует в `mods/` / `server-mods/` для игры.

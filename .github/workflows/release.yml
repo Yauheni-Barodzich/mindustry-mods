@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Версия релиза (например 0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Resolve tag
+        id: meta
+        shell: pwsh
+        run: |
+          $raw = "${{ github.event.inputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($raw)) {
+            $tag = "${{ github.ref_name }}"
+          } else {
+            $tag = if ($raw -match '^v') { $raw } else { "v$raw" }
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "Release tag: $tag"
+
+      - name: Build mods
+        shell: pwsh
+        run: ./dev/build-all.ps1
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            release/client/CLIENT-admin.zip
+            release/client/CLIENT-sync-content.zip
+            release/client/CONTENT-dune-start.zip
+            release/server/SERVER-admin.zip
+            release/server/SERVER-sync-content.zip
+            release/server/CONTENT-dune-start.zip
