@@ -1,6 +1,7 @@
 # Runtime Mindustry — в git только исходники
 /*
 !/.gitignore
+!/README.md
 !/dev/
 !/maps/
 !/release/
