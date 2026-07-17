@@ -62,24 +62,27 @@ $metaFiles = @(
 )
 
 foreach ($file in $metaFiles) {
-    $content = Get-Content $file -Raw
+    $path = Join-Path (Get-Location) $file
+    # Важно: без -Encoding UTF8 PowerShell на Windows портит кириллицу (кракозябры в списке модов).
+    $content = Get-Content $path -Raw -Encoding UTF8
     $updated = $content -replace '(?m)^version:\s*"[^"]*"', "version: `"$version`""
     if ($updated -eq $content) {
         Write-Host "Already $version in $file"
         continue
     }
     $utf8 = New-Object System.Text.UTF8Encoding $false
-    [System.IO.File]::WriteAllText((Join-Path (Get-Location) $file), $updated, $utf8)
+    [System.IO.File]::WriteAllText($path, $updated, $utf8)
     Write-Host "Updated $file"
 }
 
 $gradle = "dev/server-content-sync/build.gradle"
-$g = Get-Content $gradle -Raw
+$gradlePath = Join-Path (Get-Location) $gradle
+$g = Get-Content $gradlePath -Raw -Encoding UTF8
 $g2 = $g -replace "(?m)^    version = '[^']*'", "    version = '$version'"
 if ($g2 -eq $g) {
     Write-Host "Gradle version already $version"
 } else {
     $utf8 = New-Object System.Text.UTF8Encoding $false
-    [System.IO.File]::WriteAllText((Join-Path (Get-Location) $gradle), $g2, $utf8)
+    [System.IO.File]::WriteAllText($gradlePath, $g2, $utf8)
     Write-Host "Updated $gradle"
 }

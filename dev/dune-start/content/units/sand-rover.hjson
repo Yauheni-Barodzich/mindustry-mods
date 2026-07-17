@@ -1,9 +1,8 @@
-type: flying
-flying: false
+type: tank
 name: Вездеход-сборщик
 description: Медленный вездеход с большим трюмом. Добывает любую руду. Разгрузка вплотную к ядру или контейнеру. Лимит: 3.
-speed: 0.25
-rotateSpeed: 1.4
+speed: 0.34
+rotateSpeed: 1.7
 hitSize: 18
 health: 200
 armor: 2
@@ -12,6 +11,8 @@ range: 1
 isEnemy: false
 omniMovement: false
 rotateMoveFirst: true
+flying: false
+canBoost: false
 shadowElevation: 0
 drawSoftShadow: false
 mineTier: 5
@@ -24,7 +25,6 @@ commands: [
   mine
 ]
 defaultCommand: mine
-canBoost: false
 alwaysCreateOutline: true
 weapons: []
 research: rover-factory

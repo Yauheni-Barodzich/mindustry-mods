@@ -36,7 +36,7 @@ $zip = [System.IO.Compression.ZipFile]::Open($outPath, [System.IO.Compression.Zi
 
 try {
     Get-ChildItem -Path $src -Recurse -File | Where-Object {
-        $_.Name -notin @("build.ps1", ".gitignore", "README.md") -and
+        $_.Name -notin @("build.ps1", ".gitignore", "README.md", ".gitkeep") -and
         $_.DirectoryName -notmatch "\\\.git($|\\)" -and
         $_.DirectoryName -notmatch "\\dist($|\\)" -and
         $_.Extension -notin @(".jar", ".zip")
