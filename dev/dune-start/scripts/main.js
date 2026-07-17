@@ -1,52 +1,37 @@
+/**
+ * Дюна: Старт — вездеходы.
+ * Добыча/движение/разгрузка — стандартный CommandAI + MinerAI.
+ * Скрипт: лимит, трейты, HUD, пыль, скорость/износ — без перехвата команд.
+ */
+
 const MAX_ROVERS = 3;
 const UNIT_ID = "dune-start-sand-rover";
 const FACTORY_ID = "dune-start-rover-factory";
 const COST_AMOUNT = 5;
-/** Разгрузка только вплотную (зазор краёв). */
-const UNLOAD_EDGE_GAP = 2;
-/** Как часто сыпать пыль при движении (тики). */
 const DUST_INTERVAL = 5;
-/** Множитель скорости: пустой / полный трюм. */
 const SPEED_EMPTY = 1.55;
 const SPEED_FULL = 0.48;
 
-/** Трюм юнита в hjson = максимум; личный лимит из сида. */
 const CAP_MIN = 100;
 const CAP_MAX = 500;
-/** Разброс скорости передвижения (±10%). */
 const SPEED_VAR = 0.1;
-/** Множитель добычи: от -20% до +100% (0.8 … 2.0). */
 const MINE_SPEED_MIN = 0.8;
 const MINE_SPEED_MAX = 2.0;
-/** Множитель прочности от базовой (type.health). */
 const HEALTH_MUL_MIN = 0.65;
 const HEALTH_MUL_MAX = 1.2;
-/** Износ за полную выгрузку трюма (доля maxHealth). */
 const WEAR_PER_FULL_UNLOAD = 0.14;
 
 const dustTimer = {};
-/** Трейты из unit.flag: id -> { ... } */
 const roverTraits = {};
+/** Предыдущий stack.amount — для износа при стандартной выгрузке MinerAI. */
+const prevStackAmount = {};
 
-const brain = require("rover-brain");
-
-/** Кандидаты стартовой руды (порядок фиксирован — сид стабилен). */
-const PREFER_ITEMS = [
-  Items.copper,
-  Items.lead,
-  Items.coal,
-  Items.titanium,
-  Items.thorium,
-  Items.scrap,
-  Items.beryllium,
-  Items.tungsten,
-];
+const PREFER_ITEMS = [Items.copper, Items.lead, Items.coal, Items.scrap];
 
 function roverType() {
   return Vars.content.unit(UNIT_ID);
 }
 
-/** Возврат стоимости при лимите: по текущему плану завода или медь по умолчанию. */
 function refundRoverCost(core, spawner) {
   if (spawner != null && spawner.block != null && spawner.block.plans != null) {
     const idx = spawner.currentPlan;
@@ -74,10 +59,6 @@ function colorFromRand(rand) {
   return c;
 }
 
-/**
- * Уникальность из unit.flag (сейв/сеть).
- * Порядок Rand фиксирован: сначала 3 цвета (как раньше), потом скорость/трюм/руда.
- */
 function ensureTraits(u) {
   if (u == null) return null;
   if (roverTraits[u.id] != null) return roverTraits[u.id];
@@ -89,36 +70,18 @@ function ensureTraits(u) {
   }
 
   const rand = new Rand(seed);
-  const cabin = colorFromRand(rand);
-  const bed = colorFromRand(rand);
-  const roof = colorFromRand(rand);
-
-  const speedMul = 1 - SPEED_VAR + rand.random(SPEED_VAR * 2);
-  const capacity =
-    CAP_MIN + Math.floor(rand.random(CAP_MAX - CAP_MIN + 1));
-  const prefer =
-    PREFER_ITEMS[Math.floor(rand.random(PREFER_ITEMS.length))] || Items.copper;
-  const mineSpeedMul =
-    MINE_SPEED_MIN + rand.random(MINE_SPEED_MAX - MINE_SPEED_MIN);
-  const healthMul =
-    HEALTH_MUL_MIN + rand.random(HEALTH_MUL_MAX - HEALTH_MUL_MIN);
-
   const traits = {
-    cabin: cabin,
-    bed: bed,
-    roof: roof,
-    speedMul: speedMul,
-    capacity: capacity,
-    preferItem: prefer,
-    mineSpeedMul: mineSpeedMul,
-    healthMul: healthMul,
+    cabin: colorFromRand(rand),
+    bed: colorFromRand(rand),
+    roof: colorFromRand(rand),
+    speedMul: 1 - SPEED_VAR + rand.random(SPEED_VAR * 2),
+    capacity: CAP_MIN + Math.floor(rand.random(CAP_MAX - CAP_MIN + 1)),
+    preferSlot: Math.floor(rand.random(1024)),
+    mineSpeedMul: MINE_SPEED_MIN + rand.random(MINE_SPEED_MAX - MINE_SPEED_MIN),
+    healthMul: HEALTH_MUL_MIN + rand.random(HEALTH_MUL_MAX - HEALTH_MUL_MIN),
   };
   roverTraits[u.id] = traits;
   return traits;
-}
-
-function ensurePaint(u) {
-  return ensureTraits(u);
 }
 
 function roverCapacity(u) {
@@ -131,9 +94,47 @@ function roverSpeedMul(u) {
   return t != null ? t.speedMul : 1;
 }
 
+function itemHasOre(item) {
+  return item != null && Vars.indexer != null && Vars.indexer.hasOre(item);
+}
+
+function mapMineableItems(type) {
+  const out = [];
+  if (type == null) return out;
+  const seen = {};
+
+  const add = (item) => {
+    if (item == null || seen[item.id]) return;
+    if (item.hardness < 1 || item.hardness > type.mineTier) return;
+    if (!itemHasOre(item)) return;
+    out.push(item);
+    seen[item.id] = true;
+  };
+
+  for (let i = 0; i < PREFER_ITEMS.length; i++) add(PREFER_ITEMS[i]);
+  Vars.content.items().each(add);
+  return out;
+}
+
 function roverPreferItem(u) {
   const t = ensureTraits(u);
-  return t != null && t.preferItem != null ? t.preferItem : Items.copper;
+  const type = u != null ? u.type : roverType();
+  const available = mapMineableItems(type);
+  if (available.length == 0) {
+    for (let i = 0; i < PREFER_ITEMS.length; i++) {
+      const item = PREFER_ITEMS[i];
+      if (item != null && type != null && item.hardness <= type.mineTier) {
+        return item;
+      }
+    }
+    return Items.copper;
+  }
+  let slot = 0;
+  if (t != null) {
+    if (t.preferSlot != null) slot = t.preferSlot;
+    else if (t.preferItem != null) slot = t.preferItem.id;
+  }
+  return available[Math.abs(slot) % available.length];
 }
 
 function roverMineSpeedMul(u) {
@@ -146,7 +147,6 @@ function roverHealthMul(u) {
   return t != null && t.healthMul != null ? t.healthMul : 1;
 }
 
-/** Личный maxHealth из сида; текущее HP сохраняет долю. */
 function syncRoverHealth(u) {
   if (u == null) return;
   const mul = roverHealthMul(u);
@@ -157,7 +157,6 @@ function syncRoverHealth(u) {
   u.health = Mathf.clamp(ratio * max, 0, max);
 }
 
-/** Износ после выгрузки: чем больше сдали, тем сильнее. */
 function applyUnloadWear(u, unloaded) {
   if (u == null || unloaded <= 0) return;
   const cap = Math.max(roverCapacity(u), 1);
@@ -173,6 +172,20 @@ function clampCargo(u) {
   if (u.stack.amount > cap) u.stack.amount = cap;
 }
 
+/** Личный трюм < type.itemCapacity: сказать MinerAI «полный», дальше он сам на ядро. */
+function syncPersonalCargoFull(u) {
+  if (u == null || u.stack == null) return;
+  const amount = Number(u.stack.amount);
+  const cap = roverCapacity(u);
+  if (!(amount >= cap) || amount <= 0) return;
+
+  const ai = u.isCommandable() ? u.command() : null;
+  if (ai != null && ai.commandController instanceof MinerAI) {
+    ai.commandController.mining = false;
+  }
+}
+
+/** Стартовый prefer-stance один раз; дальше игрок/MinerAI сами. */
 function applyPreferMine(u) {
   const item = roverPreferItem(u);
   if (item == null || !u.canMine(item)) return;
@@ -186,11 +199,6 @@ function applyPreferMine(u) {
       ai.disableStance(UnitStance.mineAuto);
     }
     ai.setStance(stance);
-  }
-
-  if (ai.commandController instanceof MinerAI) {
-    ai.commandController.targetItem = item;
-    ai.commandController.mining = true;
   }
 }
 
@@ -250,15 +258,9 @@ function makeCargoAbility() {
           new Bar(
             () => {
               const t = ensureTraits(unit);
-              const spd =
-                t != null ? Math.round(t.speedMul * 100) : 100;
-              const mine =
-                t != null ? Math.round(t.mineSpeedMul * 100) : 100;
-              return Core.bundle.format(
-                "dune-start.rover-speed",
-                spd,
-                mine
-              );
+              const spd = t != null ? Math.round(t.speedMul * 100) : 100;
+              const mine = t != null ? Math.round(t.mineSpeedMul * 100) : 100;
+              return Core.bundle.format("dune-start.rover-speed", spd, mine);
             },
             () => Pal.accent,
             () => {
@@ -320,7 +322,11 @@ function makeCargoAbility() {
 }
 
 function isAbilityArray(abilities) {
-  return abilities != null && abilities.getClass != null && abilities.getClass().isArray();
+  return (
+    abilities != null &&
+    abilities.getClass != null &&
+    abilities.getClass().isArray()
+  );
 }
 
 function abilityCount(abilities) {
@@ -387,22 +393,26 @@ function syncUnitCargo(u) {
   }
 }
 
-/** Все руды по hardness до mineTier; медь/свинец первыми для ранней игры. */
 function fillMineItems(type) {
   if (type == null) return;
   type.mineItems.clear();
 
-  const prefer = PREFER_ITEMS;
-  const seen = {};
+  const onMap = mapMineableItems(type);
+  if (onMap.length > 0) {
+    for (let i = 0; i < onMap.length; i++) {
+      type.mineItems.add(onMap[i]);
+    }
+    return;
+  }
 
+  const seen = {};
   const add = (item) => {
     if (item == null || seen[item.id]) return;
     if (item.hardness < 1 || item.hardness > type.mineTier) return;
     type.mineItems.add(item);
     seen[item.id] = true;
   };
-
-  for (let i = 0; i < prefer.length; i++) add(prefer[i]);
+  for (let i = 0; i < PREFER_ITEMS.length; i++) add(PREFER_ITEMS[i]);
   Vars.content.items().each(add);
 }
 
@@ -445,88 +455,7 @@ function installCargoAbility() {
     syncUnitCargo(u);
     ensureTraits(u);
     syncRoverHealth(u);
-    applyPreferMine(u);
   });
-}
-
-function isStorage(b) {
-  if (b == null || b.block == null) return false;
-  if (b.block instanceof CoreBlock) return true;
-  const n = b.block.name;
-  return (
-    n == "container" ||
-    n == "vault" ||
-    n == "reinforced-container" ||
-    n == "reinforced-vault"
-  );
-}
-
-function findNearestStorage(u, item) {
-  let best = null;
-  let bestDst = Infinity;
-  Groups.build.each((b) => {
-    if (b.team != u.team) return;
-    if (!isStorage(b)) return;
-    if (item != null && b.acceptStack(item, 1, u) <= 0) return;
-    const d = u.dst2(b);
-    if (d < bestDst) {
-      bestDst = d;
-      best = b;
-    }
-  });
-  return best;
-}
-
-function edgeGap(u, store) {
-  const buildingR = store.block.size * Vars.tilesize * 0.5;
-  const unitR = u.hitSize * 0.5;
-  return u.dst(store) - buildingR - unitR;
-}
-
-function canUnloadAt(u, store) {
-  return store != null && edgeGap(u, store) <= UNLOAD_EDGE_GAP;
-}
-
-function tryUnload(u, store) {
-  if (store == null || u.stack == null || u.stack.amount <= 0) return false;
-  if (!canUnloadAt(u, store)) return false;
-  const item = u.stack.item;
-  const amount = u.stack.amount;
-  const accepted = store.acceptStack(item, amount, u);
-  if (accepted <= 0) return false;
-  Call.transferItemTo(u, item, accepted, u.x, u.y, store);
-  applyUnloadWear(u, accepted);
-  return true;
-}
-
-function approachPoint(u, store) {
-  const baseR =
-    store.block.size * Vars.tilesize * 0.5 + u.hitSize * 0.5 + 1.25;
-  const seed = Math.abs(u.id);
-  for (let ring = 0; ring < 5; ring++) {
-    const rad = baseR + ring * Vars.tilesize;
-    for (let i = 0; i < 8; i++) {
-      const angle = (seed % 8) * (360 / 8) + i * 45 + ring * 17;
-      const x = store.x + Angles.trnsx(angle, rad);
-      const y = store.y + Angles.trnsy(angle, rad);
-      const tile = Vars.world.tileWorld(x, y);
-      if (tile == null || tile.solid()) continue;
-      if (!u.canPass(tile.x, tile.y)) continue;
-      return new Vec2(tile.worldx(), tile.worldy());
-    }
-  }
-  const angle = (seed % 3) * 120 + (seed % 40);
-  return new Vec2(
-    store.x + Angles.trnsx(angle, baseR + Vars.tilesize * 2),
-    store.y + Angles.trnsy(angle, baseR + Vars.tilesize * 2)
-  );
-}
-
-function isMinerReturning(u, ai) {
-  if (ai == null || ai.command != UnitCommand.mineCommand) return false;
-  if (u.stack == null || u.stack.amount <= 0) return false;
-  const ctrl = ai.commandController;
-  return ctrl != null && ctrl instanceof MinerAI && !ctrl.mining;
 }
 
 function emitMoveDust(u) {
@@ -567,7 +496,6 @@ function applyCargoSpeed(u) {
   u.applyDynamicStatus().speedMultiplier = cargoMul * roverSpeedMul(u);
 }
 
-/** Доп. прогресс добычи: type.mineSpeed общий, личный множитель через mineTimer. */
 function applyMineSpeed(u) {
   if (u.mineTile == null) return;
   const mul = roverMineSpeedMul(u);
@@ -577,74 +505,15 @@ function applyMineSpeed(u) {
   if (u.mineTimer < 0) u.mineTimer = 0;
 }
 
-function itemHasOre(item) {
-  return item != null && Vars.indexer.hasOre(item);
+/** Износ: ловим падение стека (Call.transferItemTo от MinerAI). */
+function trackUnloadWear(u) {
+  const amount = u.stack != null ? Number(u.stack.amount) : 0;
+  const prev = prevStackAmount[u.id];
+  if (prev != null && prev > 0 && amount < prev) {
+    applyUnloadWear(u, prev - amount);
+  }
+  prevStackAmount[u.id] = amount;
 }
-
-function miningTargetItem(u, ai) {
-  if (u.stack != null && u.stack.amount > 0 && u.stack.item != null) {
-    return u.stack.item;
-  }
-
-  if (ai != null) {
-    const items = Vars.content.items();
-    for (let i = 0; i < items.size; i++) {
-      const item = items.get(i);
-      if (!u.canMine(item) || !itemHasOre(item)) continue;
-      const stance = ItemUnitStance.getByItem(item);
-      if (stance != null && ai.hasStance(stance)) return item;
-    }
-  }
-
-  if (ai != null && ai.commandController instanceof MinerAI) {
-    const ti = ai.commandController.targetItem;
-    if (ti != null && u.canMine(ti) && itemHasOre(ti)) return ti;
-  }
-
-  const prefer = roverPreferItem(u);
-  if (prefer != null && u.canMine(prefer) && itemHasOre(prefer)) {
-    return prefer;
-  }
-
-  const core = u.closestCore();
-  let best = null;
-  let bestScore = Infinity;
-  const list = u.type.mineItems;
-  if (list != null) {
-    for (let i = 0; i < list.size; i++) {
-      const item = list.get(i);
-      if (!u.canMine(item) || !itemHasOre(item)) continue;
-      const score = core != null ? core.items.get(item) : 0;
-      if (score < bestScore) {
-        bestScore = score;
-        best = item;
-      }
-    }
-  }
-  if (best != null) return best;
-  return Items.copper;
-}
-
-function isReachableFloorOre(tile, item) {
-  if (tile == null || item == null) return false;
-  if (tile.drop() != item) return false;
-  if (tile.solid()) return false;
-  if (tile.x <= 1 || tile.y <= 1) return false;
-  if (tile.x >= Vars.world.width() - 2 || tile.y >= Vars.world.height() - 2) {
-    return false;
-  }
-  return true;
-}
-
-const brainApi = {
-  roverCapacity: roverCapacity,
-  miningTargetItem: miningTargetItem,
-  isReachableFloorOre: isReachableFloorOre,
-  findNearestStorage: findNearestStorage,
-  approachPoint: approachPoint,
-  tryUnload: tryUnload,
-  isMinerReturning: isMinerReturning,
-};
 
 Events.on(ClientLoadEvent, (e) => {
   installCargoAbility();
@@ -690,7 +559,7 @@ Events.on(UnitDestroyEvent, (e) => {
   if (e.unit != null) {
     delete dustTimer[e.unit.id];
     delete roverTraits[e.unit.id];
-    brain.clearUnit(e.unit);
+    delete prevStackAmount[e.unit.id];
   }
 });
 
@@ -711,35 +580,10 @@ Events.run(Trigger.update, () => {
     ensureTraits(u);
     syncRoverHealth(u);
     clampCargo(u);
+    syncPersonalCargoFull(u);
+    trackUnloadWear(u);
     emitMoveDust(u);
     applyCargoSpeed(u);
     applyMineSpeed(u);
-
-    if (u.stack != null && u.stack.item == Items.sand) {
-      u.clearItem();
-    }
-
-    const ai = u.isCommandable() ? u.command() : null;
-    if (ai == null) return;
-
-    const sandStance = ItemUnitStance.getByItem(Items.sand);
-    if (sandStance != null && ai.hasStance(sandStance)) {
-      ai.disableStance(sandStance);
-      applyPreferMine(u);
-    }
-  });
-});
-
-/** После движения/MinerAI: единый мозг (toOre / mine / toStore). */
-Events.run(Trigger.afterGameUpdate, () => {
-  if (!Vars.state.isPlaying()) return;
-  const type = roverType();
-  if (type == null) return;
-
-  Groups.unit.each((u) => {
-    if (u.type != type) return;
-    const ai = u.isCommandable() ? u.command() : null;
-    if (ai == null) return;
-    brain.tick(u, ai, brainApi);
   });
 });

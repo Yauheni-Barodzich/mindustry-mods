@@ -15,7 +15,7 @@ flying: false
 canBoost: false
 shadowElevation: 0
 drawSoftShadow: false
-mineTier: 5
+mineTier: 2
 mineSpeed: 6
 mineRange: 55
 mineFloor: true
