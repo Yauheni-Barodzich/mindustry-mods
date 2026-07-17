@@ -1,0 +1,56 @@
+type: flying
+name: Дрон-камикадзе
+description: Летающий камикадзе. Ищет врагов у своей базы и врезается со взрывом. Лимит: 2. Стоимость: свинец.
+controller: SuicideAI
+speed: 2.6
+accel: 0.1
+drag: 0.03
+rotateSpeed: 10
+hitSize: 16
+health: 90
+armor: 0
+itemCapacity: 0
+# радиус поиска цели для SuicideAI / оружия
+range: 320
+flying: true
+lowAltitude: true
+engineOffset: 7
+engineSize: 2.8
+shadowElevation: 0
+drawSoftShadow: false
+isEnemy: false
+targetAir: true
+targetGround: true
+circleTarget: false
+faceTarget: true
+alwaysCreateOutline: false
+research: rover-factory
+weapons: [
+  {
+    shootOnDeath: true
+    reload: 12
+    shootCone: 180
+    ejectEffect: none
+    shootSound: explosion
+    x: 0
+    shootY: 0
+    mirror: false
+    bullet: {
+      collidesTiles: false
+      collides: false
+      hitSound: explosion
+      rangeOverride: 32
+      hitEffect: pulverize
+      despawnEffect: none
+      speed: 0
+      damage: 0
+      splashDamageRadius: 48
+      splashDamage: 110
+      instantDisappear: true
+      killShooter: true
+      hittable: false
+      collidesAir: true
+      lifetime: 1
+    }
+  }
+]

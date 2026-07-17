@@ -1,13 +1,14 @@
 type: tank
 name: Вездеход-сборщик
-description: Уникальные скорость, добыча, трюм, прочность и руда. Изнашивается при выгрузке. Лимит: 3.
+description: Танк-сборщик: добыча floor-руды (tier 2), трюм 200, разгрузка в ядро. Уникальны скорость, добыча, прочность и руда. Износ при выгрузке. Лимит: 3.
 speed: 0.34
 rotateSpeed: 1.7
 hitSize: 18
 health: 200
 armor: 2
-itemCapacity: 500
-range: 1
+itemCapacity: 200
+# MinerAI сдаёт в ядро в unit.range
+range: 50
 isEnemy: false
 omniMovement: false
 rotateMoveFirst: true

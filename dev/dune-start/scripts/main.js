@@ -1,19 +1,23 @@
 /**
- * Дюна: Старт — вездеходы.
- * Добыча/движение/разгрузка — стандартный CommandAI + MinerAI.
- * Скрипт: лимит, трейты, HUD, пыль, скорость/износ — без перехвата команд.
+ * Дюна: Старт — вездеходы + дрон-камикадзе.
+ * Добыча — CommandAI/MinerAI. Дроны — оборона базы (лимит 2).
  */
 
 const MAX_ROVERS = 3;
+const MAX_DRONES = 2;
 const UNIT_ID = "dune-start-sand-rover";
+const DRONE_ID = "dune-start-kamikaze-drone";
 const FACTORY_ID = "dune-start-rover-factory";
-const COST_AMOUNT = 5;
+const COST_AMOUNT = 10;
+const DRONE_COST_LEAD = 15;
+/** Радиус поиска врагов от своего ядра (клетки). */
+const DRONE_DEFENSE_TILES = 56;
+/** Дистанция подрыва. */
+const DRONE_EXPLODE_DST = 26;
 const DUST_INTERVAL = 5;
 const SPEED_EMPTY = 1.55;
 const SPEED_FULL = 0.48;
 
-const CAP_MIN = 100;
-const CAP_MAX = 500;
 const SPEED_VAR = 0.1;
 const MINE_SPEED_MIN = 0.8;
 const MINE_SPEED_MAX = 2.0;
@@ -23,7 +27,7 @@ const WEAR_PER_FULL_UNLOAD = 0.14;
 
 const dustTimer = {};
 const roverTraits = {};
-/** Предыдущий stack.amount — для износа при стандартной выгрузке MinerAI. */
+/** Предыдущий stack.amount — износ при выгрузке MinerAI. */
 const prevStackAmount = {};
 
 const PREFER_ITEMS = [Items.copper, Items.lead, Items.coal, Items.scrap];
@@ -32,7 +36,11 @@ function roverType() {
   return Vars.content.unit(UNIT_ID);
 }
 
-function refundRoverCost(core, spawner) {
+function droneType() {
+  return Vars.content.unit(DRONE_ID);
+}
+
+function refundPlanCost(core, spawner, fallbackItem, fallbackAmount) {
   if (spawner != null && spawner.block != null && spawner.block.plans != null) {
     const idx = spawner.currentPlan;
     if (idx >= 0 && idx < spawner.block.plans.size) {
@@ -46,7 +54,125 @@ function refundRoverCost(core, spawner) {
       }
     }
   }
-  core.items.add(Items.copper, COST_AMOUNT);
+  if (fallbackItem != null) core.items.add(fallbackItem, fallbackAmount);
+}
+
+function refundRoverCost(core, spawner) {
+  refundPlanCost(core, spawner, Items.copper, COST_AMOUNT);
+}
+
+function refundDroneCost(core, spawner) {
+  refundPlanCost(core, spawner, Items.lead, DRONE_COST_LEAD);
+}
+
+function removeOverLimit(unit, spawner, max, refundFn, toastKey) {
+  const type = unit.type;
+  if (unit.team.data().countType(type) <= max) return false;
+
+  const core = unit.team.core();
+  if (core != null) refundFn(core, spawner);
+
+  if (spawner != null) {
+    spawner.payload = null;
+    spawner.progress = 0;
+  }
+
+  unit.remove();
+
+  if (!Vars.headless && Vars.ui != null) {
+    Vars.ui.showInfoToast(Core.bundle.get(toastKey), 3);
+  }
+  return true;
+}
+
+function droneDefenseRange() {
+  return DRONE_DEFENSE_TILES * Vars.tilesize;
+}
+
+/** Враг/здание врага в радиусе от точки (без Units.closestEnemy — в JS часто падает). */
+function findThreatNear(team, x, y, range) {
+  let best = null;
+  let bestD2 = range * range;
+
+  Groups.unit.each((e) => {
+    if (e == null || e.team == team) return;
+    if (e.dead) return;
+    try {
+      if (!e.type.targetable) return;
+    } catch (ex) {}
+    const d2 = e.dst2(x, y);
+    if (d2 <= bestD2) {
+      bestD2 = d2;
+      best = e;
+    }
+  });
+
+  Groups.build.each((b) => {
+    if (b == null || b.team == team) return;
+    if (!b.isValid() || b.dead) return;
+    try {
+      if (b.block != null && !b.block.targetable) return;
+    } catch (ex) {}
+    const d2 = b.dst2(x, y);
+    if (d2 <= bestD2) {
+      bestD2 = d2;
+      best = b;
+    }
+  });
+
+  return best;
+}
+
+/**
+ * Оборона базы: лететь на угрозу у ядра и взорваться вплотную.
+ * Движение через movePref после AI — CommandAI не мешает.
+ */
+function tickDroneDefense(u) {
+  if (u == null || u.dead) return;
+
+  const core = u.closestCore();
+  if (core == null) return;
+
+  const range = droneDefenseRange();
+  const enemy = findThreatNear(u.team, core.x, core.y, range);
+
+  // погасить добычу/цели CommandAI
+  u.mineTile = null;
+  const ai = u.isCommandable() ? u.command() : null;
+  if (ai != null) {
+    ai.targetPos = null;
+    ai.attackTarget = null;
+    if (ai.commandQueue != null) ai.commandQueue.clear();
+  }
+
+  if (enemy != null) {
+    const ex = enemy.x;
+    const ey = enemy.y;
+    Tmp.v1.set(ex - u.x, ey - u.y);
+    const len = Tmp.v1.len();
+    if (len > 0.001) {
+      Tmp.v1.scl(u.speed() / len);
+      u.movePref(Tmp.v1);
+    }
+    try {
+      u.lookAt(ex, ey);
+    } catch (e) {}
+
+    if (u.within(ex, ey, DRONE_EXPLODE_DST)) {
+      u.kill();
+    }
+    return;
+  }
+
+  // нет угрозы — барражировать у ядра
+  if (!u.within(core.x, core.y, Vars.tilesize * 10)) {
+    Tmp.v1.set(core.x - u.x, core.y - u.y);
+    const len = Tmp.v1.len();
+    if (len > 0.001) {
+      Tmp.v1.scl(u.speed() / len);
+      u.movePref(Tmp.v1);
+    }
+  }
 }
 
 function colorFromRand(rand) {
@@ -70,23 +196,36 @@ function ensureTraits(u) {
   }
 
   const rand = new Rand(seed);
+  // порядок Rand: цвета → скорость → (бывший capacity, discard) → prefer → mine → health
+  const cabin = colorFromRand(rand);
+  const bed = colorFromRand(rand);
+  const roof = colorFromRand(rand);
+  const speedMul = 1 - SPEED_VAR + rand.random(SPEED_VAR * 2);
+  // раньше capacity 100..500 — тот же вызов, чтобы не сдвинуть сид
+  Math.floor(rand.random(401));
+  const preferSlot = Math.floor(rand.random(1024));
+  const mineSpeedMul =
+    MINE_SPEED_MIN + rand.random(MINE_SPEED_MAX - MINE_SPEED_MIN);
+  const healthMul =
+    HEALTH_MUL_MIN + rand.random(HEALTH_MUL_MAX - HEALTH_MUL_MIN);
+
   const traits = {
-    cabin: colorFromRand(rand),
-    bed: colorFromRand(rand),
-    roof: colorFromRand(rand),
-    speedMul: 1 - SPEED_VAR + rand.random(SPEED_VAR * 2),
-    capacity: CAP_MIN + Math.floor(rand.random(CAP_MAX - CAP_MIN + 1)),
-    preferSlot: Math.floor(rand.random(1024)),
-    mineSpeedMul: MINE_SPEED_MIN + rand.random(MINE_SPEED_MAX - MINE_SPEED_MIN),
-    healthMul: HEALTH_MUL_MIN + rand.random(HEALTH_MUL_MAX - HEALTH_MUL_MIN),
+    cabin: cabin,
+    bed: bed,
+    roof: roof,
+    speedMul: speedMul,
+    preferSlot: preferSlot,
+    mineSpeedMul: mineSpeedMul,
+    healthMul: healthMul,
   };
   roverTraits[u.id] = traits;
   return traits;
 }
 
 function roverCapacity(u) {
-  const t = ensureTraits(u);
-  return t != null ? t.capacity : CAP_MIN;
+  if (u != null && u.type != null) return u.type.itemCapacity;
+  const type = roverType();
+  return type != null ? type.itemCapacity : 200;
 }
 
 function roverSpeedMul(u) {
@@ -164,25 +303,6 @@ function applyUnloadWear(u, unloaded) {
   const dmg = u.maxHealth * WEAR_PER_FULL_UNLOAD * frac;
   if (dmg <= 0) return;
   u.damagePierce(dmg, false);
-}
-
-function clampCargo(u) {
-  if (u == null || u.stack == null) return;
-  const cap = roverCapacity(u);
-  if (u.stack.amount > cap) u.stack.amount = cap;
-}
-
-/** Личный трюм < type.itemCapacity: сказать MinerAI «полный», дальше он сам на ядро. */
-function syncPersonalCargoFull(u) {
-  if (u == null || u.stack == null) return;
-  const amount = Number(u.stack.amount);
-  const cap = roverCapacity(u);
-  if (!(amount >= cap) || amount <= 0) return;
-
-  const ai = u.isCommandable() ? u.command() : null;
-  if (ai != null && ai.commandController instanceof MinerAI) {
-    ai.commandController.mining = false;
-  }
 }
 
 /** Стартовый prefer-stance один раз; дальше игрок/MinerAI сами. */
@@ -437,7 +557,8 @@ function installCargoAbility() {
   const type = roverType();
   if (type == null) return;
 
-  type.itemCapacity = CAP_MAX;
+  // itemCapacity из hjson — общий для всех; range нужен MinerAI для сдачи в ядро
+  if (type.range < 40) type.range = 50;
   fillMineItems(type);
   installRoverCommands(type);
 
@@ -448,6 +569,14 @@ function installCargoAbility() {
   }
   if (!typeResult.hasCargo) {
     type.abilities.add(makeCargoAbility());
+  }
+
+  const drone = droneType();
+  if (drone != null) {
+    try {
+      drone.commands.clear();
+    } catch (e) {}
+    drone.range = Math.max(drone.range, 320);
   }
 
   Groups.unit.each((u) => {
@@ -505,7 +634,6 @@ function applyMineSpeed(u) {
   if (u.mineTimer < 0) u.mineTimer = 0;
 }
 
-/** Износ: ловим падение стека (Call.transferItemTo от MinerAI). */
 function trackUnloadWear(u) {
   const amount = u.stack != null ? Number(u.stack.amount) : 0;
   const prev = prevStackAmount[u.id];
@@ -528,30 +656,33 @@ Events.on(WorldLoadEvent, (e) => {
 });
 
 Events.on(UnitCreateEvent, (e) => {
-  const type = roverType();
-  if (type == null || e.unit == null || e.unit.type != type) return;
+  if (e.unit == null) return;
 
-  syncUnitCargo(e.unit);
-  ensureTraits(e.unit);
-  syncRoverHealth(e.unit);
-  applyPreferMine(e.unit);
-
-  if (e.unit.team.data().countType(type) <= MAX_ROVERS) return;
-
-  const core = e.unit.team.core();
-  if (core != null) {
-    refundRoverCost(core, e.spawner);
+  const rover = roverType();
+  if (rover != null && e.unit.type == rover) {
+    syncUnitCargo(e.unit);
+    ensureTraits(e.unit);
+    syncRoverHealth(e.unit);
+    applyPreferMine(e.unit);
+    removeOverLimit(
+      e.unit,
+      e.spawner,
+      MAX_ROVERS,
+      refundRoverCost,
+      "dune-start.rover-limit"
+    );
+    return;
   }
 
-  if (e.spawner != null) {
-    e.spawner.payload = null;
-    e.spawner.progress = 0;
-  }
-
-  e.unit.remove();
-
-  if (!Vars.headless && Vars.ui != null) {
-    Vars.ui.showInfoToast(Core.bundle.get("dune-start.rover-limit"), 3);
+  const drone = droneType();
+  if (drone != null && e.unit.type == drone) {
+    removeOverLimit(
+      e.unit,
+      e.spawner,
+      MAX_DRONES,
+      refundDroneCost,
+      "dune-start.drone-limit"
+    );
   }
 });
 
@@ -564,26 +695,44 @@ Events.on(UnitDestroyEvent, (e) => {
 });
 
 Events.run(Trigger.update, () => {
-  const type = roverType();
-  if (type == null) return;
+  const rover = roverType();
+  const drone = droneType();
 
   Groups.build.each((b) => {
     if (b.block == null || b.block.name != FACTORY_ID) return;
     if (b.payload != null) return;
-    if (b.team.data().countType(type) < MAX_ROVERS) return;
-    b.progress = 0;
+    if (b.block.plans == null || b.currentPlan < 0) return;
+    if (b.currentPlan >= b.block.plans.size) return;
+    const plan = b.block.plans.get(b.currentPlan);
+    if (plan == null || plan.unit == null) return;
+
+    if (rover != null && plan.unit == rover) {
+      if (b.team.data().countType(rover) >= MAX_ROVERS) b.progress = 0;
+    } else if (drone != null && plan.unit == drone) {
+      if (b.team.data().countType(drone) >= MAX_DRONES) b.progress = 0;
+    }
   });
 
-  Groups.unit.each((u) => {
-    if (u.type != type) return;
+  if (rover != null) {
+    Groups.unit.each((u) => {
+      if (u.type != rover) return;
+      ensureTraits(u);
+      syncRoverHealth(u);
+      trackUnloadWear(u);
+      emitMoveDust(u);
+      applyCargoSpeed(u);
+      applyMineSpeed(u);
+    });
+  }
+});
 
-    ensureTraits(u);
-    syncRoverHealth(u);
-    clampCargo(u);
-    syncPersonalCargoFull(u);
-    trackUnloadWear(u);
-    emitMoveDust(u);
-    applyCargoSpeed(u);
-    applyMineSpeed(u);
+/** После AI: дроны летят на угрозу у базы / взрываются. */
+Events.run(Trigger.afterGameUpdate, () => {
+  if (!Vars.state.isPlaying()) return;
+  const drone = droneType();
+  if (drone == null) return;
+  Groups.unit.each((u) => {
+    if (u.type != drone) return;
+    tickDroneDefense(u);
   });
 });

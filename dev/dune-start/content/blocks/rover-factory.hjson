@@ -1,6 +1,6 @@
 type: UnitFactory
 name: Простая мастерская
-description: Собирает вездеходы-сборщики. Не требует энергии.
+description: Собирает вездеходы и дроны-камикадзе. Не требует энергии. Лимиты: 3 вездехода, 2 дрона.
 size: 3
 health: 550
 armor: 1
@@ -9,14 +9,21 @@ research: core-shard
 researchCostMultiplier: 0.2
 hasPower: false
 requirements: [
-  copper/50
+  copper/70
 ]
 plans: [
   {
     unit: sand-rover
-    time: 300
+    time: 240
     requirements: [
-      copper/5
+      copper/10
+    ]
+  }
+  {
+    unit: kamikaze-drone
+    time: 180
+    requirements: [
+      lead/15
     ]
   }
 ]
