@@ -1,5 +1,5 @@
 type: UnitFactory
-name: Гараж вездеходов
+name: Простая мастерская
 description: Собирает вездеходы-сборщики. Не требует энергии.
 size: 3
 health: 550

@@ -1,12 +1,12 @@
 type: tank
 name: Вездеход-сборщик
-description: Медленный вездеход с большим трюмом. Добывает любую руду. Разгрузка вплотную к ядру или контейнеру. Лимит: 3.
+description: Уникальные скорость, добыча, трюм, прочность и руда. Изнашивается при выгрузке. Лимит: 3.
 speed: 0.34
 rotateSpeed: 1.7
 hitSize: 18
 health: 200
 armor: 2
-itemCapacity: 120
+itemCapacity: 500
 range: 1
 isEnemy: false
 omniMovement: false
